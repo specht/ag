@@ -21,13 +21,15 @@ class Ag
         begin
             @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
         rescue Rugged::RepositoryError => e
-            puts e
+            puts e unless ENV.include?('COMP_LINE')
             exit(1)
         end
         
         handle_auto_completion() if ENV.include?('COMP_LINE')
         
-        ensure_git_hook_present()
+        if Rugged::Branch.lookup(@repo, '_ag')
+            ensure_git_hook_present()
+        end
         
         case ARGV[0]
         when 'list'
@@ -204,12 +206,14 @@ class Ag
                 end
                 puts "[#{tag}] #{commits_for_issues.include?(tag) ? '*' : ' '} #{prefix}#{box_art}#{issue[:summary]}"
                 if tags_by_parent.include?(tag)
-                    print_tree(tag, all_issues, tags_by_parent, commits_for_issues, parent ? prefix + "\u2502  " : prefix)
+                    print_tree(tag, all_issues, tags_by_parent, commits_for_issues, parent ? prefix + (index < count - 1 ? "\u2502  " : "   ") : prefix)
                 end
             end
         end
-        
-        print_tree(nil, all_issues, tags_by_parent, commits_for_issues)
+
+        if tags_by_parent[nil]
+            print_tree(nil, all_issues, tags_by_parent, commits_for_issues)
+        end
     end
 
     def show_issue(tag)
@@ -337,7 +341,7 @@ class Ag
             issue = load_issue(tag)
             begin
                 parent = load_issue(parent_tag)
-            rescue Rugged::ReferenceError => e
+            rescue
                 parent_tag = nil
             end
             issue[:parent] = parent_tag
@@ -355,6 +359,7 @@ class Ag
             end
             
             def walk_tree(parent, all_issues, tags_by_parent)
+                return unless tags_by_parent[parent]
                 items = []
                 count = tags_by_parent[parent].size
                 tags_by_parent[parent].sort.each_with_index do |tag, index|

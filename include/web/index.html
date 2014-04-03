@@ -15,7 +15,7 @@ $(document).ready(function() {
     $('#tt').treegrid({
         url:'ag.json',
         idField:'tag',
-        treeField:'tag',
+        treeField:'summary',
         onLoadSuccess: function(row) {
             $(this).treegrid('enableDnd', row ? row.id : null);
         },
@@ -36,7 +36,7 @@ $(document).ready(function() {
             
         },
         columns:[[
-            {title: 'Tag', field: 'tag'},
+            {title: 'Tag', field: 'tag', styler: function(value,row,index){ return 'font-family: monospace;'; }},
             {title: 'Summary', field: 'summary'}
         ]]
     });
