@@ -1,0 +1,10 @@
+INSTALLATION NOTES
+
+Create symbolic links:
+
+  sudo ln -s ./ag /usr/local/bin/ag
+  sudo ln -s ./include /usr/lib/ruby/1.9.1/ag
+
+To enable BASH auto-completion, add this line to your ~/.bashrc:
+
+  complete -C /usr/local/bin/ag -o default ag

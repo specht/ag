@@ -1,7 +1,9 @@
 require 'date'
+require 'json'
 require 'rugged'
 require 'set'
 require 'tempfile'
+require 'webrick'
 require 'yaml'
 
 require 'ag/autocomplete'
@@ -40,6 +42,8 @@ class Ag
             start_working_on_issue(ARGV[1])
         when 'oneline'
             oneline(ARGV[1])
+        when 'web'
+            web()
         end
     end
     
@@ -49,7 +53,7 @@ class Ag
         AutoComplete::define(parts) do |ac|
             
             # all simple commands
-            ['list'].each do |command|
+            ['list', 'web'].each do |command|
                 ac.option(command)
             end
             
@@ -150,8 +154,34 @@ class Ag
         end
         raise "No such issue: [#{tag}]."
     end
+    
+    def find_commits_for_issues()
+        results = {}
+        walker = Rugged::Walker.new(@repo)
+#         walker.sorting(Rugged::SORT_TOPO | Rugged::SORT_REVERSE)
+        walker.push(@repo.head.target)
+        walker.each do |commit|
+            message = commit.message
+            if message =~ /^\[[a-z]{2}\d{4}\]/
+                tag = message[1, 6]
+                results[tag] ||= {
+                    :count => 0,
+                    :time_min => commit.time,
+                    :time_max => commit.time,
+                    :authors => Set.new()
+                }
+                results[tag][:count] += 1
+                results[tag][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
+                results[tag][:time_min] = commit.time if commit.time < results[tag][:time_min]
+                results[tag][:time_max] = commit.time if commit.time > results[tag][:time_max]
+            end
+        end
+        return results
+    end
 
     def list_issues()
+#         commits_for_issues = find_commits_for_issues()
+#         puts commits_for_issues.to_yaml
         all_issues = {}
         tags_by_parent = {}
         all_tags.sort.each do |tag|
@@ -199,6 +229,17 @@ class Ag
         puts "[#{tag}] #{parts.join(' / ')}"
     end
     
+    def issue_to_s(issue)
+        result = ''
+        
+        result += "Summary: #{issue[:summary]}\n"
+        result += "Parent: #{issue[:parent]}\n" if issue[:parent]
+        result += "\n"
+        result += issue[:description]
+        
+        return result
+    end
+    
     def commit_issue(tag, issue, comment)
         index = Rugged::Index.new
         begin
@@ -212,7 +253,7 @@ class Ag
             # have any files to add yet
         end
 
-        oid = @repo.write(issue[:original], :blob)
+        oid = @repo.write(issue_to_s(issue), :blob)
         index.add(:path => tag, :oid => oid, :mode => 0100644)
 
         options = {}
@@ -276,9 +317,64 @@ class Ag
     
     def start_working_on_issue(tag)
         issue = load_issue(tag)
-        summary_pieces = issue[:summary].downcase.gsub('/[^a-z0-9]/', '').split(' ').select { |x| !x.empty? }[0, 8]
+        summary_pieces = issue[:summary].downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.empty? }[0, 8]
         slug = "#{issue[:tag]}-#{summary_pieces.join('-')}"
         # if there's already a branch handling this issue, maybe don't create a new branch?
         system("git checkout -b #{slug}")
+    end
+    
+    def web()
+        root = File::join(File.expand_path(File.dirname(__FILE__)), 'web')
+        server = WEBrick::HTTPServer.new(:Port => 19816, :DocumentRoot => root)
+        
+        trap('INT') do 
+            server.shutdown()
+        end
+        
+        server.mount_proc('/update-parent') do |req, res|
+            parts = req.unparsed_uri.split('/')
+            tag = parts[2]
+            parent_tag = parts[3]
+            issue = load_issue(tag)
+            begin
+                parent = load_issue(parent_tag)
+            rescue Rugged::ReferenceError => e
+                parent_tag = nil
+            end
+            issue[:parent] = parent_tag
+            commit_issue(tag, issue, 'Changed parent of issue')
+        end
+        
+        server.mount_proc('/ag.json') do |req, res|
+            all_issues = {}
+            tags_by_parent = {}
+            all_tags.sort.each do |tag|
+                issue = load_issue(tag)
+                all_issues[tag] = issue
+                tags_by_parent[issue[:parent]] ||= []
+                tags_by_parent[issue[:parent]] << tag
+            end
+            
+            def walk_tree(parent, all_issues, tags_by_parent)
+                items = []
+                count = tags_by_parent[parent].size
+                tags_by_parent[parent].sort.each_with_index do |tag, index|
+                    issue = all_issues[tag]
+                    items << {'tag' => tag, 'summary' => issue[:summary]}
+                    if tags_by_parent.include?(tag)
+                        items.last['children'] = walk_tree(tag, all_issues, tags_by_parent)
+                    end
+                end
+                return items
+            end
+            
+            items = walk_tree(nil, all_issues, tags_by_parent)
+            res.body = items.to_json()
+        end        
+
+        puts
+        puts "Please go to >>> http://localhost:19816 <<< to interact with the issue tracker."
+        puts
+        server.start
     end
 end

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ag</title>
+<link rel="stylesheet" type="text/css" href="./include/jquery-easyui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="./include/jquery-easyui/themes/icon.css">
+<link rel="stylesheet" type="text/css" href="ag.css">
+<script type="text/javascript" src="./include/jquery-easyui/jquery.min.js"></script>
+<script type="text/javascript" src="./include/jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="./include/jquery-easyui/treegrid-dnd.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    $('#tt').treegrid({
+        url:'ag.json',
+        idField:'tag',
+        treeField:'tag',
+        onLoadSuccess: function(row) {
+            $(this).treegrid('enableDnd', row ? row.id : null);
+        },
+        onDrop: function(targetRow, sourceRow, point)
+        {
+            var tag = sourceRow.tag;
+            var newParent = sourceRow._parentId;
+            console.log("update " + tag + ".parent to " + newParent);
+            jQuery.ajax({
+                url: "/update-parent/" + tag + "/" + newParent, 
+                success: function() {
+                    console.log("Hooray!");
+                },
+                error: function() {
+                    console.log("Yup, that's an error.");
+                }
+            });
+            
+        },
+        columns:[[
+            {title: 'Tag', field: 'tag'},
+            {title: 'Summary', field: 'summary'}
+        ]]
+    });
+});
+</script>
+
+</head>
+
+<body>
+<table id='tt' title="Issues" class="easyui-treegrid"></table>
+</body>
+</html>
