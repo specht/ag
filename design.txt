@@ -1,0 +1,87 @@
+Ag design
+---------
+
+- every commit is connected to an issue
+- an issue expresses a well-defined concern, this may be a bug, a feature or something else like
+  refactoring / housekeeping / administration
+- issues need tags
+- issues may have a parent issue -> issue trees!
+
+- before you start working, the issue you're going to work on has to be defined
+  - this usually happens in the develop branch
+- when you work on anything, you first specify the issue you're working on (or multiple)
+- in the develop branch, this is issue is being marked as active (ABC is currently working on issue XYZ)
+- a devoted branch is created automatically for you to work in (as63h-add-documentation)
+- in the branch, the system always knows which issues to include in log messages
+- outside the branch, we know who's working on it even if we don't see the changes yet
+- inside the branch, the issue gets resolved when everything's finished
+- merge back magic!
+
+Issues
+------
+
+- every issue is a single, manually editable text file (YAML)
+- no huge formal process, developers are responsible for correct use
+- contributions are handled as with the code (forks and pull requests)
+
+- tags: [free text tags]
+- parent issue: [issue] or bust
+- summary
+- description
+- resolved: false/true
+- working-on-it: [list of names]
+
+Usage
+-----
+
+# init Ag, on top of Git
+$ ag init  
+
+# list issues
+$ ag list
+
+# add issue (interactive)
+$ ag add
+
+# start working on issue
+$ ag start d8[auto-complete!]
+
+# when we commit in the topic branch, we need:
+1) automtic insertion of the issue IDs into the commit message
+2) independent verification that an issue has been referenced and the issue indeed exists
+
+# resolve issue (no problem if forgotten, but would be nice) - and return to parent branch?
+$ ag resolve
+
+# show statistics
+$ ag stats
+
+
+Important
+---------
+
+- excellent tab auto-completion
+
+
+Questions
+---------
+
+- Can we use nested branches? If we're already in a topic branch, and we notice that we
+  totally have to work on something else - can we add a new issue and work on that from
+  there? It should be possible. But then we need to be aware of which branch we're coming
+  from - or do we? A branch is just a temporary pointer, after all.
+
+Re-thought
+----------
+
+- convention over configuration
+- hassle-free text format with optional keys:
+
+-----------------------------------------------------------------
+Summary: ...
+Parent: ... (optional)
+Status: open/closed
+
+Free text, including description, comments and discussion
+-----------------------------------------------------------------
+

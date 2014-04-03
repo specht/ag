@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby1.9.1
+
+# auto-completion: 
+# $ complete -C /usr/local/bin/ag -o default ag
+
+require 'ag/ag'
+
+ag = Ag.new()
