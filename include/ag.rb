@@ -180,8 +180,7 @@ class Ag
     end
 
     def list_issues()
-#         commits_for_issues = find_commits_for_issues()
-#         puts commits_for_issues.to_yaml
+        commits_for_issues = find_commits_for_issues()
         all_issues = {}
         tags_by_parent = {}
         all_tags.sort.each do |tag|
@@ -191,7 +190,7 @@ class Ag
             tags_by_parent[issue[:parent]] << tag
         end
         
-        def print_tree(parent, all_issues, tags_by_parent, prefix = '')
+        def print_tree(parent, all_issues, tags_by_parent, commits_for_issues, prefix = '')
             count = tags_by_parent[parent].size
             tags_by_parent[parent].sort.each_with_index do |tag, index|
                 issue = all_issues[tag]
@@ -203,14 +202,14 @@ class Ag
                         box_art = "\u2514\u2500\u2500"
                     end
                 end
-                puts "[#{tag}] #{prefix}#{box_art}#{issue[:summary]}"
+                puts "[#{tag}] #{commits_for_issues.include?(tag) ? '*' : ' '} #{prefix}#{box_art}#{issue[:summary]}"
                 if tags_by_parent.include?(tag)
-                    print_tree(tag, all_issues, tags_by_parent, parent ? prefix + "\u2502  " : prefix)
+                    print_tree(tag, all_issues, tags_by_parent, commits_for_issues, parent ? prefix + "\u2502  " : prefix)
                 end
             end
         end
         
-        print_tree(nil, all_issues, tags_by_parent)
+        print_tree(nil, all_issues, tags_by_parent, commits_for_issues)
     end
 
     def show_issue(tag)
@@ -317,7 +316,7 @@ class Ag
     
     def start_working_on_issue(tag)
         issue = load_issue(tag)
-        summary_pieces = issue[:summary].downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.empty? }[0, 8]
+        summary_pieces = issue[:summary].downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.strip.empty? }[0, 8]
         slug = "#{issue[:tag]}-#{summary_pieces.join('-')}"
         # if there's already a branch handling this issue, maybe don't create a new branch?
         system("git checkout -b #{slug}")
