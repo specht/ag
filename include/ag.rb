@@ -1,5 +1,6 @@
 require 'date'
 require 'json'
+require 'open3'
 require 'rugged'
 require 'set'
 require 'tempfile'
@@ -7,6 +8,7 @@ require 'webrick'
 require 'yaml'
 
 require 'ag/autocomplete'
+require 'ag/pager'
 
 class Ag
     
@@ -17,6 +19,10 @@ class Ag
         
         @editor = 'nano'
         @editor = ENV['EDITOR'] if ENV['EDITOR']
+
+        if !['web', 'new', 'edit'].include?(ARGV.first)
+            run_pager()
+        end
         
         begin
             @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
@@ -31,7 +37,7 @@ class Ag
             ensure_git_hook_present()
         end
         
-        case ARGV[0]
+        case ARGV.first
         when 'list'
             list_issues()
         when 'show'
@@ -46,6 +52,8 @@ class Ag
             oneline(ARGV[1])
         when 'web'
             web()
+        when 'help', '--help', '-h'
+            help()
         end
     end
     
@@ -55,19 +63,35 @@ class Ag
         AutoComplete::define(parts) do |ac|
             
             # all simple commands
-            ['list', 'web'].each do |command|
+            ['list', 'web', 'help'].each do |command|
                 ac.option(command)
             end
             
-            # all commands which require an issue ID
-            ['new', 'show', 'edit', 'start', 'oneline'].each do |command|
+            # all commands which require a current issue ID
+            ['new', 'show', 'edit', 'start', 'oneline', 'rm'].each do |command|
                 ac.option(command) do |ac|
-                    all_tags.each do |tag|
-                        ac.option(tag)
+                    all_tags(false).each do |tag|
+                        issue = load_issue(tag)
+                        ac.option(issue[:slug])
                     end
                 end
             end
             
+            # special treatment for 'reparent' command
+            ['reparent'].each do |command|
+                ac.option(command) do |ac|
+                    all_tags(false).each do |tag|
+                        issue = load_issue(tag)
+                        ac.option(issue[:slug]) do |ac2|
+                            all_tags(false).each do |tag2|
+                                issue2 = load_issue(tag2)
+                                ac2.option(issue2[:slug])
+                            end
+                            ac2.option('null')
+                        end
+                    end
+                end
+            end
         end
         exit 0
     end
@@ -81,17 +105,26 @@ class Ag
             File::chmod(0755, hook_path)
         end
     end
-    
-    def all_tags()
+
+    # return all tags already assigned
+    # if recursive == true, this includes tags which have already
+    # been removed (walks entire history of _ag branch, if present)
+    def all_tags(recursive = true)
         tags = Set.new()
-        begin
-            @repo.rev_parse('_ag').tree.each_blob do |blob|
-                tag = blob[:name]
-                tags << tag
+        
+        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        if ag_branch
+            walker = Rugged::Walker.new(@repo)
+            walker.push(ag_branch.target)
+            walker.each do |commit|
+                commit.tree.each_blob do |blob|
+                    tag = blob[:name]
+                    tags << tag
+                end
+                break unless recursive
             end
-        rescue Rugged::ReferenceError => e
-            # _ag branch is not there yet, return no tags, but that's ok
         end
+        
         return tags
     end
 
@@ -109,11 +142,13 @@ class Ag
         file = Tempfile.new('ag')
         contents = ''
         begin
-            File::open(file.path, 'w') do |f|
+            File::open(file.path, 'wb') do |f|
                 f.write(template)
             end
             system("#{@editor} #{file.path}")
-            contents = File.read(file.path)
+            File::open(file.path, 'rb') do |f|
+                contents = f.read()
+            end
         ensure
             file.close
             file.unlink
@@ -122,6 +157,7 @@ class Ag
     end
 
     def parse_issue(s, tag)
+        tag = tag[0, 6]
         original = s.dup
         
         lines = s.split("\n")
@@ -142,11 +178,16 @@ class Ag
         description = lines.join("\n")
         description.strip!
         
+        summary_pieces = summary.downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.strip.empty? }[0, 8]
+        slug = "#{tag}-#{summary_pieces.join('-')}"
+
+        
         return {:tag => tag, :original => original, :parent => parent,
-                :summary => summary, :description => description}
+                :summary => summary, :description => description, :slug => slug}
     end
 
     def load_issue(tag)
+        tag = tag[0, 6]
         @repo.rev_parse('_ag').tree.each_blob do |blob|
             test_tag = blob[:name]
             if test_tag == tag
@@ -160,7 +201,6 @@ class Ag
     def find_commits_for_issues()
         results = {}
         walker = Rugged::Walker.new(@repo)
-#         walker.sorting(Rugged::SORT_TOPO | Rugged::SORT_REVERSE)
         walker.push(@repo.head.target)
         walker.each do |commit|
             message = commit.message
@@ -185,7 +225,7 @@ class Ag
         commits_for_issues = find_commits_for_issues()
         all_issues = {}
         tags_by_parent = {}
-        all_tags.sort.each do |tag|
+        all_tags.each do |tag|
             issue = load_issue(tag)
             all_issues[tag] = issue
             tags_by_parent[issue[:parent]] ||= []
@@ -194,7 +234,11 @@ class Ag
         
         def print_tree(parent, all_issues, tags_by_parent, commits_for_issues, prefix = '')
             count = tags_by_parent[parent].size
-            tags_by_parent[parent].sort.each_with_index do |tag, index|
+            tags_by_parent[parent].sort do |a, b|
+                    issue_a = all_issues[a]
+                    issue_b = all_issues[b]
+                    issue_a[:summary].downcase <=> issue_b[:summary].downcase
+                end.each_with_index do |tag, index|
                 issue = all_issues[tag]
                 box_art = ''
                 if parent
@@ -217,11 +261,17 @@ class Ag
     end
 
     def show_issue(tag)
+        tag = tag[0, 6]
         issue = load_issue(tag)
+        ol = get_oneline(tag)
+        puts '-' * ol.size
+        puts ol
+        puts '-' * ol.size
         puts issue[:original]
     end
     
-    def oneline(tag)
+    def get_oneline(tag)
+        tag = tag[0, 6]
         issue = load_issue(tag)
         parts = [issue[:summary]]
         p = issue
@@ -229,7 +279,12 @@ class Ag
             p = load_issue(p[:parent])
             parts.unshift(p[:summary])
         end
-        puts "[#{tag}] #{parts.join(' / ')}"
+        return "[#{tag}] #{parts.join(' / ')}"
+    end
+    
+    def oneline(tag)
+        tag = tag[0, 6]
+        puts get_oneline(tag)
     end
     
     def issue_to_s(issue)
@@ -244,6 +299,7 @@ class Ag
     end
     
     def commit_issue(tag, issue, comment)
+        tag = tag[0, 6]
         index = Rugged::Index.new
         begin
             @repo.rev_parse('_ag').tree.each_blob do |blob|
@@ -280,6 +336,7 @@ class Ag
     end
 
     def new_issue(parent_tag)
+        parent_tag = parent_tag[0, 6] if parent_tag
         tag = gen_tag()
         
         if parent_tag
@@ -310,20 +367,25 @@ class Ag
     end
 
     def edit_issue(tag)
+        tag = tag[0, 6]
         issue = load_issue(tag)
         
-        issue = parse_issue(call_editor(issue[:original]), tag)
-        
-        commit_issue(tag, issue, 'Modified issue')
-        puts "Modified issue ##{tag}: #{issue[:summary]}"
+        modified_issue = call_editor(issue[:original])
+        if modified_issue != issue[:original]
+            issue = parse_issue(modified_issue, tag)
+            
+            commit_issue(tag, issue, 'Modified issue')
+            puts "Modified issue ##{tag}: #{issue[:summary]}"
+        else
+            puts "Leaving issue ##{tag} unchanged: #{issue[:summary]}"
+        end
     end
     
     def start_working_on_issue(tag)
+        tag = tag[0, 6]
         issue = load_issue(tag)
-        summary_pieces = issue[:summary].downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.strip.empty? }[0, 8]
-        slug = "#{issue[:tag]}-#{summary_pieces.join('-')}"
         # if there's already a branch handling this issue, maybe don't create a new branch?
-        system("git checkout -b #{slug}")
+        system("git checkout -b #{issue[:slug]}")
     end
     
     def web()
@@ -348,6 +410,13 @@ class Ag
             commit_issue(tag, issue, 'Changed parent of issue')
         end
         
+        server.mount_proc('/read-issue') do |req, res|
+            parts = req.unparsed_uri.split('/')
+            tag = parts[2]
+            issue = load_issue(tag)
+            res.body = issue.to_json()
+        end
+        
         server.mount_proc('/ag.json') do |req, res|
             all_issues = {}
             tags_by_parent = {}
@@ -362,7 +431,11 @@ class Ag
                 return unless tags_by_parent[parent]
                 items = []
                 count = tags_by_parent[parent].size
-                tags_by_parent[parent].sort.each_with_index do |tag, index|
+                tags_by_parent[parent].sort do |a, b|
+                    issue_a = all_issues[a]
+                    issue_b = all_issues[b]
+                    issue_a[:summary].downcase <=> issue_b[:summary].downcase
+                end.each_with_index do |tag, index|
                     issue = all_issues[tag]
                     items << {'tag' => tag, 'summary' => issue[:summary]}
                     if tags_by_parent.include?(tag)
@@ -379,6 +452,28 @@ class Ag
         puts
         puts "Please go to >>> http://localhost:19816 <<< to interact with the issue tracker."
         puts
+        
+        fork do
+            system("google-chrome http://localhost:19816")
+        end
+        
         server.start
+    end
+    
+    def help()
+        puts "Ag - issue tracking intertwined with Git"
+        puts
+        puts "Usage: ag <command> [<args>]"
+        puts
+        puts "Available commands:"
+        puts "   edit       Edit an issue"
+        puts "   list       List all issues"
+        puts "   new        Create a new issue"
+        puts "   oneline    Describe an issue in a single line"
+        puts "   reparent   Re-define the parent issue of an issue"
+        puts "   rm         Remove an issue"
+        puts "   show       Show detailed issue information"
+        puts "   start      Start working on an issue"
+        puts "   web        Interact with issues via web browser"
     end
 end

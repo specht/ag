@@ -1,3 +1,42 @@
-body {
+body 
+{
     font-family: sans-serif;
+}
+
+div#fixed_right
+{
+    position: fixed;
+    width: 66%;
+    height: 100%;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: #fff;
+    border-left: 1px solid #aaa;
+    box-shadow: 0px 0px 8px 0px #ccc;
+    z-index: 100;
+}
+
+div#scrollable_left
+{
+    width: 50%;
+}
+
+#contents
+{
+/*     position: absolute; */
+    margin-left: 8px;
+    margin-top: 8px;
+    width: 97%;
+    height: 97%;
+    background-color: #fff;
+    color: #000;
+    font-family: monospace;
+    white-space: pre;
+}
+
+.panel
+{
+/*     overflow: scroll; */
+/*     width: 300px; */
 }

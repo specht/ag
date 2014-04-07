@@ -33,10 +33,24 @@ $(document).ready(function() {
                     console.log("Yup, that's an error.");
                 }
             });
+        },
+        onClickRow: function(row)
+        {
+            var tag = row.tag;
+            jQuery.ajax({
+                url: "/read-issue/" + tag,
+                success: function(res) {
+                    result = jQuery.parseJSON(res);
+                    $('#contents').text(result['original']);
+                },
+                error: function() {
+                    console.log("Yup, that's an error.");
+                }
+            });
             
         },
         columns:[[
-            {title: 'Tag', field: 'tag', styler: function(value,row,index){ return 'font-family: monospace;'; }},
+            {title: 'Tag', width: 60, field: 'tag', styler: function(value,row,index){ return 'font-family: monospace;'; }},
             {title: 'Summary', field: 'summary'}
         ]]
     });
@@ -46,6 +60,11 @@ $(document).ready(function() {
 </head>
 
 <body>
-<table id='tt' title="Issues" class="easyui-treegrid"></table>
+<div id='fixed_right'>
+<div id='contents'></div>
+</div>
+<div id='scrollable_left'>
+    <table id='tt' title="Issues" class="easyui-treegrid"></table>
+</div>
 </body>
 </html>
