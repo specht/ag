@@ -1,4 +1,5 @@
 require 'date'
+require 'highline/import'
 require 'json'
 require 'open3'
 require 'rugged'
@@ -20,7 +21,7 @@ class Ag
         @editor = 'nano'
         @editor = ENV['EDITOR'] if ENV['EDITOR']
 
-        if !['web', 'new', 'edit'].include?(ARGV.first)
+        if !['web', 'new', 'edit', 'rm'].include?(ARGV.first)
             run_pager()
         end
         
@@ -38,20 +39,26 @@ class Ag
         end
         
         case ARGV.first
-        when 'list'
-            list_issues()
+        when 'new'
+            new_issue(ARGV[1])
         when 'show'
             show_issue(ARGV[1])
         when 'edit'
             edit_issue(ARGV[1])
-        when 'new'
-            new_issue(ARGV[1])
+        when 'rm'
+            rm_issue(ARGV[1])
         when 'start'
             start_working_on_issue(ARGV[1])
         when 'oneline'
             oneline(ARGV[1])
+        when 'list'
+            list_issues()
+        when 'search'
+            search(ARGV[1, ARGV.size - 1])
         when 'web'
             web()
+        when 'log'
+            log()
         when 'help', '--help', '-h'
             help()
         end
@@ -63,7 +70,7 @@ class Ag
         AutoComplete::define(parts) do |ac|
             
             # all simple commands
-            ['list', 'web', 'help'].each do |command|
+            ['list', 'web', 'help', 'search', 'log'].each do |command|
                 ac.option(command)
             end
             
@@ -106,11 +113,11 @@ class Ag
         end
     end
 
-    # return all tags already assigned
+    # return all tags already assigned, with its most recent commit sha1
     # if recursive == true, this includes tags which have already
     # been removed (walks entire history of _ag branch, if present)
-    def all_tags(recursive = true)
-        tags = Set.new()
+    def all_tags_with_sha1(recursive = true)
+        tags = {}
         
         ag_branch = Rugged::Branch.lookup(@repo, '_ag')
         if ag_branch
@@ -119,7 +126,7 @@ class Ag
             walker.each do |commit|
                 commit.tree.each_blob do |blob|
                     tag = blob[:name]
-                    tags << tag
+                    tags[tag] ||= commit.oid
                 end
                 break unless recursive
             end
@@ -128,8 +135,13 @@ class Ag
         return tags
     end
 
+    def all_tags(recursive = true)
+        tags = all_tags_with_sha1(recursive)
+        return Set.new(tags.keys)
+    end
+
     def gen_tag()
-        existing_tags = all_tags()
+        existing_tags = all_tags(true)
         loop do
             result = ''
             2.times { result += (rand(26) + 'a'.ord).chr }
@@ -188,11 +200,18 @@ class Ag
 
     def load_issue(tag)
         tag = tag[0, 6]
-        @repo.rev_parse('_ag').tree.each_blob do |blob|
-            test_tag = blob[:name]
-            if test_tag == tag
-                issue = parse_issue(@repo.lookup(blob[:oid]).content, tag)
-                return issue
+        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        if ag_branch
+            walker = Rugged::Walker.new(@repo)
+            walker.push(ag_branch.target)
+            walker.each do |commit|
+                commit.tree.each_blob do |blob|
+                    test_tag = blob[:name]
+                    if test_tag == tag
+                        issue = parse_issue(@repo.lookup(blob[:oid]).content, tag)
+                        return issue
+                    end
+                end
             end
         end
         raise "No such issue: [#{tag}]."
@@ -225,7 +244,7 @@ class Ag
         commits_for_issues = find_commits_for_issues()
         all_issues = {}
         tags_by_parent = {}
-        all_tags.each do |tag|
+        all_tags(false).each do |tag|
             issue = load_issue(tag)
             all_issues[tag] = issue
             tags_by_parent[issue[:parent]] ||= []
@@ -297,8 +316,9 @@ class Ag
         
         return result
     end
-    
-    def commit_issue(tag, issue, comment)
+
+    # commit an issue OR delete it if issue == nil && really_delete == true
+    def commit_issue(tag, issue, comment, really_delete = false)
         tag = tag[0, 6]
         index = Rugged::Index.new
         begin
@@ -312,15 +332,26 @@ class Ag
             # have any files to add yet
         end
 
-        oid = @repo.write(issue_to_s(issue), :blob)
-        index.add(:path => tag, :oid => oid, :mode => 0100644)
+        if issue
+            oid = @repo.write(issue_to_s(issue), :blob)
+            index.add(:path => tag, :oid => oid, :mode => 0100644)
+        else
+            unless really_delete
+                puts "Ag internal error: No issue passed to commit_issue, yet really_delete is not true."
+                exit(2)
+            end
+        end
 
         options = {}
         options[:tree] = index.write_tree(@repo)
 
         options[:author] = { :email => @config['user.email'], :name => @config['user.name'], :time => Time.now }
         options[:committer] = { :email => @config['user.email'], :name => @config['user.name'], :time => Time.now }
-        options[:message] ||= "#{comment} [#{tag}]: #{issue[:summary]}"
+        if issue
+            options[:message] ||= "#{comment} [#{tag}]: #{issue[:summary]}"
+        else
+            options[:message] ||= "#{comment} [#{tag}]"
+        end
         options[:parents] = []
         if Rugged::Branch.lookup(@repo, '_ag')
             options[:parents] = [ @repo.rev_parse_oid('_ag') ].compact
@@ -381,11 +412,47 @@ class Ag
         end
     end
     
+    def rm_issue(tag)
+        tag = tag[0, 6]
+        issue = load_issue(tag)
+        
+        puts "Removing issue: #{get_oneline(tag)}"
+    
+        # If this issue has currently any children, we shouldn't remove it
+        all_tags(false).each do |check_tag|
+            check_issue = load_issue(check_tag)
+            if check_issue[:parent] == tag
+                puts "Error: This issue has children, unable to continue."
+                exit(1)
+            end
+        end
+        
+        response = ask("Are you sure you want to remove this issue [y/N]? ")
+        if response.downcase == 'y'
+            commit_issue(tag, nil, 'Removed issue', true)
+            puts "Removed issue ##{tag}."
+        else
+            puts "Leaving issue ##{tag} unchanged."
+        end
+    end
+    
     def start_working_on_issue(tag)
         tag = tag[0, 6]
         issue = load_issue(tag)
         # if there's already a branch handling this issue, maybe don't create a new branch?
         system("git checkout -b #{issue[:slug]}")
+    end
+    
+    def search(keywords)
+        all_tags(true).each do |tag|
+            issue = load_issue(tag)
+            found_something = false
+            keywords.each do |keyword|
+                if issue[:original].downcase.include?(keyword.downcase)
+                    puts get_oneline(tag)
+                end
+            end
+        end
     end
     
     def web()
@@ -420,7 +487,7 @@ class Ag
         server.mount_proc('/ag.json') do |req, res|
             all_issues = {}
             tags_by_parent = {}
-            all_tags.sort.each do |tag|
+            all_tags(false).sort.each do |tag|
                 issue = load_issue(tag)
                 all_issues[tag] = issue
                 tags_by_parent[issue[:parent]] ||= []
@@ -458,6 +525,25 @@ class Ag
         end
         
         server.start
+    end
+    
+    def log()
+        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        if ag_branch
+            
+            walker = Rugged::Walker.new(@repo)
+            walker.push(ag_branch.target)
+            max_author_width = 1
+            walker.each do |commit|
+                max_author_width = commit.author[:name].size if commit.author[:name].size > max_author_width
+            end
+            
+            walker = Rugged::Walker.new(@repo)
+            walker.push(ag_branch.target)
+            walker.each do |commit|
+                puts "#{commit.author[:time].strftime('%Y/%m/%d %H:%M:%S')} | #{sprintf('%-' + max_author_width.to_s + 's', commit.author[:name])} | #{commit.message}"
+            end
+        end
     end
     
     def help()
