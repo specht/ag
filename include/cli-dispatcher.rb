@@ -21,7 +21,7 @@ class AutoCompleteHelper
     end
 end
 
-class AutoComplete
+class CliDispatcher
 #     File::open('log.txt', 'a+') do |f|
 #         f.puts '-' * 50
 #     end

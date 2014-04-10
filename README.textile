@@ -1,0 +1,26 @@
+h1. Ag design
+
+The aim of Ag is to define and maintain issues (which can be features, bugs or 
+something else like housekeeping / refactoring / administration) and to connect 
+commits to issues.
+
+This enables us not only to see when changes to the code have been made by whom,
+but we'll also be able to see the intentions, that is, why the code has been changed.
+
+Every time something gets committed to the repository, it is related to an issue.
+
+Issues may be linked to zero, one, or several categories. Categories are defined 
+in a tree structure which may represent different perspectives on the project.
+
+So there are two types of objects in Ag:
+
+# Category nodes, arranged in a tree (every has a parent node or @null@ if it's a 
+root node). These categories should remain fairly constant throughout the project.
+# Issues, which may be connected to one or more category nodes.
+
+h2. Workflow
+
+* Create an issue
+* Start working on the issue
+* Define and maintain categories
+* Connect issues to categories
