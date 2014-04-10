@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.9.1
+#!/usr/bin/env ruby
 
 # auto-completion: 
 # $ complete -C /usr/local/bin/ag -o default ag

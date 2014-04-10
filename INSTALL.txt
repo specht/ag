@@ -1,10 +1,16 @@
 INSTALLATION NOTES
 
-Create symbolic links:
+Install the Paint ruby gem:
+
+  gem install paint
+
+Create symbolic links (from this directory):
 
   sudo ln -s ./ag /usr/local/bin/ag
-  sudo ln -s ./include /usr/lib/ruby/1.9.1/ag
+  sudo ln -s ./include /usr/local/lib/site_ruby
 
 To enable BASH auto-completion, add this line to your ~/.bashrc:
 
   complete -C /usr/local/bin/ag -o default ag
+
+Now re-launch your shell or source ~/.bashrc - and you should be done.

@@ -1,26 +1,24 @@
-h1. Ag design
+h1. Ag - issue tracking intertwined with Git
 
-The aim of Ag is to define and maintain issues (which can be features, bugs or 
-something else like housekeeping / refactoring / administration) and to connect 
-commits to issues.
+Ag is an issue tracker built on top of Git. Sound familiar? You bet.
 
-This enables us not only to see when changes to the code have been made by whom,
-but we'll also be able to see the intentions, that is, why the code has been changed.
+Why not use a stand-alone issue tracker with a web frontend? Here are some key points:
 
-Every time something gets committed to the repository, it is related to an issue.
+* *Issues are completely managed via Git.* Issues are plain text files which live in a branch
+separate from the project's source code. This means that as you code, all issues and related 
+information is right there.
 
-Issues may be linked to zero, one, or several categories. Categories are defined 
-in a tree structure which may represent different perspectives on the project.
+* Keeping *issues in a separate Git branch* doesn't spill issue-related information into your code 
+tree.
 
-So there are two types of objects in Ag:
+* *No more 'um... fixed this and that' commit messages.* When you work with issues, you have 
+already specified your intentions behind every issue, possibly aided by nested categories.
+When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic 
+branch and it will automatically prepare the commit message to establsih the link between 
+a commit and an issue. Feel free to add comments if your commit needs more explaining.
 
-# Category nodes, arranged in a tree (every has a parent node or @null@ if it's a 
-root node). These categories should remain fairly constant throughout the project.
-# Issues, which may be connected to one or more category nodes.
-
-h2. Workflow
-
-* Create an issue
-* Start working on the issue
-* Define and maintain categories
-* Connect issues to categories
+* *Nested categories.* Issues can be viewed from different perspectives. For example, an issue 
+might be related to various components of the project, or different groups of people might be 
+affected by it. Such multi-perspective arrangements can be captured by Ag using nested 
+categories (all categories are arranged in a tree). Issues can be linked to one or more 
+categories.
