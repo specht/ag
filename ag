@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-# auto-completion: 
-# $ complete -C /usr/local/bin/ag -o default ag
+# Please see INSTALL.txt for instructions.
 
 require 'ag/ag'
 

@@ -391,9 +391,14 @@ class Ag
     end
 
     def list_issues(args)
-        # TODO: Handle args (category filter)
+        filter_cats = nil
+        unless args.empty?
+            filter_cats = args.map do |cat_id|
+                category = load_category(cat_id)
+                category[:id]
+            end
+        end
         commits_for_issues = find_commits_for_issues()
-        # TODO: Handle commits_for_issues
         all_issues = {}
         all_issue_ids(false).each do |id|
             issue = load_issue(id)
@@ -402,7 +407,24 @@ class Ag
         
         all_issues.keys.sort.each do |id|
             issue = all_issues[id]
-            puts Paint["[#{issue[:id]}] #{issue[:summary]}", COLOR_ISSUE]
+            line = Paint["[#{issue[:id]}] #{commits_for_issues.include?(id) ? '*' : ' '} #{issue[:summary]}", COLOR_ISSUE]
+            cats = issue[:categories].map do |cat_id|
+                category = load_category(cat_id)
+                category[:id]
+            end
+            if filter_cats
+                # category filtering is on, lets intersect!
+                next if (Set.new(cats) & Set.new(filter_cats)).empty?
+            end
+            # promote cat IDs to summaries ('cause it's oh so pretty!)
+            cats = cats.map do |cat_id|
+                category = load_category(cat_id)
+                category[:summary]
+            end
+            unless cats.empty?
+                line += Paint[" (#{cats.join(' / ')})", COLOR_CATEGORY]
+            end
+            puts line
         end
         
     end
@@ -614,7 +636,7 @@ class Ag
             
             commit_object(id, object, "Modified #{object_type}: #{object[:slug]}")
         else
-            puts "Leaving #{object_type} ##{id} unchanged: #{object[:summary]}"
+            puts "Leaving #{object_type} [#{id}] unchanged: #{object[:summary]}"
         end
     end
     

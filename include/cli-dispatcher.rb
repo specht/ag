@@ -31,16 +31,6 @@ class AutoCompleteHelper
 end
 
 class CliDispatcher
-#     File::open('log.txt', 'a+') do |f|
-#         f.puts '-' * 50
-#     end
-#     
-#     def self.log(s)
-#         File::open('log.txt', 'a+') do |f|
-#             f.puts s
-#         end
-#     end
-    
     @@completion_mode = ENV['COMP_LINE'] != nil
     
     def self.launch(parts = nil, parent_inception = false, collected_parts = [], &block)
@@ -84,7 +74,6 @@ class CliDispatcher
         choice_values = choices.inject(Set.new()) do |s, choice|
             s | ac.options[choice][:values]
         end
-#         log("We encountered a part (#{part}), remaining parts are: [#{parts.join(', ')}], remaining choices are: [#{choices.to_a.sort.join(', ')}] => [#{choice_values.to_a.sort.join(', ')}]")
         
         if @@completion_mode && parts.empty?
             # there are no more parts to process
