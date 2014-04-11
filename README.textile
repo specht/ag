@@ -186,10 +186,14 @@ bc. $ ag list
 [br9077]   Implement XML export
 [tz9540]   Colors are all wrong
 
+'Implement XML export' is a feature, so let's record that:
+
 bc. $ ag link xml[TAB] feat[TAB]
 # this will turn into: ag link br9077-implement-xml-export hc6100-feature
 
 bc. Linked issue br9077-implement-xml-export to 1 category
+
+'Colors are all wrong' is a bug, so let's record that, too:
 
 bc. $ ag link col[TAB] bug[TAB]
 # this will turn into: ag link tz9540-colors-are-all-wrong eo6845-bug
