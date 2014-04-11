@@ -1,7 +1,4 @@
 #!/usr/bin/env ruby
-
-# Please see INSTALL.txt for instructions.
-
 require 'ag/ag'
 
 ag = Ag.new()
