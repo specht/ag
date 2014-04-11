@@ -177,7 +177,55 @@ Want to see which bugs are there?
 bc. $ ag list bug[TAB]
 # this will turn into: ag list eo6845-bug
 
+This gives you all issues which are linked to the 'Bug' category:
+
 bc. [tz9540]   Colors are all wrong (Bug)
+
+As you've seen, categories are arranged in a tree (each category item has a parent, which can be null). Categories are expected to be pretty stable during a project. Issues can be linked to zero, one, or more categories and they're not directly related to each other, they may only share common categories.
+
+h3. Can we start working on an issue already?
+
+Alright, let's fix that strange color bug:
+
+bc. $ ag start col[TAB]
+# this will turn into: ag start bc. $ ag start col[TAB]
+
+bc. Switched to a new branch 'tz9540-colors-are-all-wrong'
+
+Now you've got your own topic branch to deal with that bug. Make some edits, test your code, and commit:
+
+bc. git commit
+
+And the commit message is already there:
+
+bc.. [tz9540] Colors are all wrong
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch tz9540-colors-are-all-wrong
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#       modified:   hello.txt
+#
+
+p. The issue is referenced from the commit via @[tz9540]@. Now let's have a look at the issues again:
+
+bc. $ ag list 
+[br9077]   Implement XML export (Feature)
+[tz9540] * Colors are all wrong (Bug)
+
+The asterisk means that there has already work been done for this issue, that is, there is at least one commit which references the issue.
+
+h3. Resolving issues
+
+Now that we have fixed the color bug, we can resolve the issue. Because this is all happening in Git, let's remove that bug (we'll still be able to walk back in history to dig out the bug and see when it was filed, when commits have been made, and when it was removed):
+
+bc. $ ag rm col[TAB]
+Removing issue: [tz9540] Colors are all wrong
+Are you sure you want to remove this issue [y/N]? 
+
+Type 'y' and the issue won't show up in listings or tab completions anymore. Don't worry though, it's not gone at all. You can still say @ag start tz9540@ and you'll be given a topic branch and when you commit, you still get the automatically prepared commit message. We know it was around in the past, but we don't want to see it anymore because we're done with it.
 
 h3. Wrap up
 
@@ -186,3 +234,11 @@ No you should be able to create issues and categories. Use @ag help@ to learn mo
 bc. $ ag new bug[TAB]
 
 The newly created issue will be linked to @eo6845-bug@.
+
+h2. To do
+
+* there should be a way to restore a previously deleted issue or category
+* search results should be more clear (right now, you find removed issues but you can't tell 
+  from the search results that they have been deleted)
+* web interface and reporting
+* Agile?
