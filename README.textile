@@ -78,7 +78,7 @@ bc. $ ag list
 
 Yes, it's still there! Let's look at the issue in detail:
 
-bc..$ ag show tz9540
+bc.. $ ag show tz9540
 -----------------------------
 [tz9540] Colors are all wrong
 -----------------------------
