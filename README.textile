@@ -215,7 +215,7 @@ bc. $ ag list
 [br9077]   Implement XML export (Feature)
 [tz9540] * Colors are all wrong (Bug)
 
-The asterisk means that there has already work been done for this issue, that is, there is at least one commit which references the issue.
+The asterisk means that there has already work been done for this issue, that is, there is at least one commit which references the issue. 
 
 h3. Resolving issues
 
@@ -229,11 +229,46 @@ Type 'y' and the issue won't show up in listings or tab completions anymore. Don
 
 h3. Wrap up
 
-No you should be able to create issues and categories. Use @ag help@ to learn more about other commands. Once you've set up some categories, you can already specify them on the command line when you create an issue. For example, to file a new bug:
+Now you should be able to create issues and categories. Use @ag help@ to learn more about other commands. Once you've set up some categories, you can already specify them on the command line when you create an issue. For example, to file a new bug:
 
 bc. $ ag new bug[TAB]
 
 The newly created issue will be linked to @eo6845-bug@.
+
+Oh, here's what you get when you type @ag help@:
+
+bc.. Ag - issue tracking intertwined with Git
+
+Usage: ag <command> [<args>]
+
+Available category-related commands:
+cat new       Create a new category
+cat list      List all categories
+cat show      Show raw category information
+cat edit      Edit a new category
+cat reparent  Re-define the parent category of a category
+cat rm        Remove a category
+
+Available issue-related commands:
+new           Create a new issue
+list          List all issues
+show          Show raw issue information
+oneline       Show condensed issue information in a single line
+edit          Edit an issue
+link          Link an issue to a category
+unlink        Unlink an issue from a category
+start         Start working on an issue
+rm            Remove an issue
+
+Miscellaneous commands:
+search        Search for categories or issues
+log           Show of a log of Ag activities
+help          Show usage information
+
+See 'ag help <command>' for more information on a specific command.
+Ag supports tab completion pretty well - try to specify category or 
+issue IDs via keywords, they will be auto-completed.
+
 
 h2. To do
 
