@@ -88,7 +88,9 @@ When you try to set the foreground color to red, it becomes yellow. How's that e
 
 h3. Tab auto-completion
 
-p. While these IDs are really handy, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify this issue on the command line, you can type any of the following:
+When you specify issues, only the first six characters are taken into account. For example, issue @tz9540@ may be specified as @tz9540@, @tz9540-colors-are-all-wrong@, or @tz9540-gosh-dang-it-to-heck@. 
+
+While these IDs are really handy to refer to an issue, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify issue on the command line, you can type any of the following:
 
 * @tz[TAB]@
 * @color[TAB]@
