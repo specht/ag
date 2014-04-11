@@ -12,7 +12,7 @@ Here are some key points of Ag:
 
 * Keeping *issues in a separate Git branch* doesn't spill issue-related information into your code  tree.
 
-* *No more 'um... fixed this and that' commit messages.* When you work with issues, you have  already specified your intentions behind every issue, possibly aided by nested categories. When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic branch and it will automatically prepare the commit message to establsih the link between a commit and an issue. Feel free to add comments if your commit needs more explaining.
+* *No more 'um... fixed this and that' commit messages.* When you work with issues, you have  already specified your intentions behind every issue, possibly aided by nested categories. When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic branch and it will automatically prepare the commit message to establish the link between a commit and an issue. Feel free to add comments if your commit needs more explaining.
 
 * *Nested categories.* Issues can be viewed from different perspectives. Typically, an issue is related to various aspects of technical, conceptual, or organizational levels. Such multi-perspective arrangements can be captured by Ag using nested categories (all categories are arranged in a tree). Issues can be linked to one or more categories.
 
@@ -107,7 +107,6 @@ tz9540
 
 $ cat issue/tz9540
 Summary: Colors are all wrong
-Categories: eo6845-bug
 
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
 
