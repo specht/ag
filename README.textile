@@ -111,7 +111,7 @@ Categories: eo6845-bug
 
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
 
-p. That's all there is to it. Let's switch back to the master branch:
+p. That's all there is to it. Nothing to see here! Let's switch back to the master branch:
 
 bc. $ git checkout master
 Switched to branch 'master'
