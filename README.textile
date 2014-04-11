@@ -88,15 +88,15 @@ When you try to set the foreground color to red, it becomes yellow. How's that e
 
 h3. Tab auto-completion
 
-When you specify issues, only the first six characters are taken into account. For example, issue @tz9540@ may be specified as @tz9540@, @tz9540-colors-are-all-wrong@, or @tz9540-gosh-dang-it-to-heck@. 
+When you specify issues, only the first six characters are taken into account. For example, issue @tz9540@ may be specified as @tz9540@, @tz9540-colors-are-all-wrong@, or @tz9540-gosh-dang-it-to-heck@. The summary is usually just there to help you recognize the issue, but it may change. The ID remains fixed, however.
 
-While these IDs are really handy to refer to an issue, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify issue on the command line, you can type any of the following:
+While these IDs are really handy to refer to an issue, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify issue @tz9540-colors-are-all-wrong@ on the command line, you can type any of the following:
 
 * @tz[TAB]@
 * @color[TAB]@
 * @wrong[TAB]@
 
-...or even shorter pieces. Ag will expand your input to the issue ID followed by the summary, like this:
+...or even shorter pieces. Yes, these are words from your summary. Ag will expand your input to the issue ID followed by the summary, like this:
 
 bc. $ ag sh[TAB] co[TAB]
 
@@ -126,7 +126,8 @@ bc. Created new category: ko4993-issue-type
 # This is the parent category which will have 'feature' and 'bug' as its children.
 
 bc. $ ag cat new ko4993-issue-type
-# We can already specify on the CLI that this category should be a child of 'Issue type', but it could as well be done later using 'ag cat reparent'
+# We can already specify on the CLI that this category should be a child of 'Issue type', 
+# but it could as well be done later using 'ag cat reparent'
 
 bc. Summary: Feature
 Parent: ko4993-issue-type
