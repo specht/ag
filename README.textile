@@ -118,7 +118,7 @@ Switched to branch 'master'
 
 h3. Tab auto-completion
 
-When you specify issues, only the first six characters are taken into account. For example, issue @tz9540@ may be specified as @tz9540@, @tz9540-colors-are-all-wrong@, or @tz9540-gosh-dang-it-to-heck@. The summary is usually just there to help you recognize the issue, but it may change. The ID remains fixed, however.
+When you specify issues, only the first six characters are taken into account. For example, issue @tz9540@ may be specified as @tz9540@, @tz9540-colors-are-all-wrong@, or @tz9540-gosh-dang-it-to-heck@. The summary is usually just there to help you recognize the issue, but it may change if you modify the issue's summary. The ID remains fixed, however.
 
 While these IDs are really handy to refer to an issue, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify issue @tz9540-colors-are-all-wrong@ on the command line, you can type any of the following:
 
