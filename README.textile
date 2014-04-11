@@ -243,7 +243,7 @@ bc.. [tz9540] Colors are all wrong
 #       modified:   hello.txt
 #
 
-p. The issue is referenced from the commit via @[tz9540]@. Now let's have a look at the issues again:
+p. The issue is referenced from the commit via @[tz9540]@. How does Ag know we're working on that bug? Ag looks at the branch name. If it starts with two letters and four digits, followed by a dash, it must be an issue! Now let's have a look at the issues again:
 
 bc. $ ag list 
 [br9077]   Implement XML export (Feature)
