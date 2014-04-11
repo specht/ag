@@ -24,26 +24,26 @@ Yeah. Right now, installation is a bit awkward. An installation package would be
 
 Get the code first:
 
-  $ git clone https://github.com/specht/ag.git
-  $ cd ag
+bc. $ git clone https://github.com/specht/ag.git
+$ cd ag
 
 Install the Paint ruby gem:
 
-  $ gem install paint
-  -> you may have to make that a sudo gem install
+bc. $ gem install paint
+-> you may have to make that a sudo gem install
 
 Create symbolic links (from this directory):
 
-  $ sudo ln -s ./ag /usr/local/bin/ag
-  -> use any path you like as long as it's in your $PATH
+bc. $ sudo ln -s ./ag /usr/local/bin/ag
+-> use any path you like as long as it's in your $PATH
   
-  $ sudo ln -s ./include /usr/local/lib/site_ruby
-  -> choose any path which is in Ruby's search path, try this: $ ruby -e 'puts $:'
+bc. $ sudo ln -s ./include /usr/local/lib/site_ruby
+-> choose any path which is in Ruby's search path, try this: $ ruby -e 'puts $:'
   
 To enable BASH auto-completion, add this line to your ~/.bashrc:
 
-  complete -C /usr/local/bin/ag -o default ag
-  -> Re-launch your shell or source ~/.bashrc
+bc. complete -C /usr/local/bin/ag -o default ag
+-> Re-launch your shell or source ~/.bashrc
   
 That should be it. Try 'ag help' to get started.
 
