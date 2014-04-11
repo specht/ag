@@ -27,9 +27,9 @@ Get the code first:
 bc. $ git clone https://github.com/specht/ag.git
 $ cd ag
 
-Install the Paint ruby gem:
+Install a handful of Ruby gems:
 
-bc. $ gem install paint
+bc. $ gem install rugged json highline paint
 # you may have to make that a sudo gem install
 
 Create symbolic links (from this directory):
