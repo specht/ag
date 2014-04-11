@@ -76,7 +76,7 @@ The small bit in front is the issue ID. You can use it to specify the issue (alt
 bc. $ ag list 
 [tz9540]   Colors are all wrong
 
-Yes, it's still there! Let's look at the issue in detail:
+Yes, the issue is still there! Let's look at the issue in detail:
 
 bc.. $ ag show tz9540
 -----------------------------
@@ -85,6 +85,36 @@ bc.. $ ag show tz9540
 Summary: Colors are all wrong
 
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
+
+h3. Where does Ag store its data?
+
+Ag creates a new branch @_ag@ in your Git repository:
+
+bc. $ git branch 
+  _ag
+* master
+
+Let's have look:
+
+bc.. $ git checkout _ag
+Switched to branch '_ag'
+
+$ ls
+issue
+
+$ ls issue/
+tz9540
+
+$ cat issue/tz9540
+Summary: Colors are all wrong
+Categories: eo6845-bug
+
+When you try to set the foreground color to red, it becomes yellow. How's that even possible?
+
+p. That's all there is to it. Let's switch back to the master branch:
+
+bc. $ git checkout master
+Switched to branch 'master'
 
 h3. Tab auto-completion
 
