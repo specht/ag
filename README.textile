@@ -1,24 +1,19 @@
 h1. Ag - issue tracking intertwined with Git
 
-Ag is an issue tracker built on top of Git. Sound familiar? You bet.
+Ag is an issue tracker built on top of Git. Sound familiar? You bet. Here's the motivation for Ag:
 
-Why not use a stand-alone issue tracker with a web frontend? Here are some key points:
+Previously, I would have code in a Git repository and issues in a web-based issue tracking system. Put feature ideas and bug reports in the issue tracker, modify the code and resolve issues over time. From the issue tracker's point of view, issues are marked as resolved after some time, but there's no code or commits connected to it. Wouldn't that be useful? 
 
-* *Issues are completely managed via Git.* Issues are plain text files which live in a branch
-separate from the project's source code. This means that as you code, all issues and related 
-information is right there.
+Too bad it's hard to link issues and commits this way - if there was such a connection, we would be able to tell not only who has changed the code when, but we'd also be able to tell why the code has been changed (and not in terms of reading commit messages, but using issues from the issue tracker). Commits could be easily (and automatically) assigned to feature or bug, for example, or to various other aspects of the software project.
 
-* Keeping *issues in a separate Git branch* doesn't spill issue-related information into your code 
-tree.
+Here are some key points of Ag:
 
-* *No more 'um... fixed this and that' commit messages.* When you work with issues, you have 
-already specified your intentions behind every issue, possibly aided by nested categories.
-When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic 
-branch and it will automatically prepare the commit message to establsih the link between 
-a commit and an issue. Feel free to add comments if your commit needs more explaining.
+* *Issues are completely managed via Git.* Issues are plain text files which live in a branch separate from the project's source code. This means that as you code, all issues and related  information is right there beside you.
 
-* *Nested categories.* Issues can be viewed from different perspectives. For example, an issue 
-might be related to various components of the project, or different groups of people might be 
-affected by it. Such multi-perspective arrangements can be captured by Ag using nested 
-categories (all categories are arranged in a tree). Issues can be linked to one or more 
-categories.
+* Keeping *issues in a separate Git branch* doesn't spill issue-related information into your code  tree.
+
+* *No more 'um... fixed this and that' commit messages.* When you work with issues, you have  already specified your intentions behind every issue, possibly aided by nested categories. When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic branch and it will automatically prepare the commit message to establsih the link between a commit and an issue. Feel free to add comments if your commit needs more explaining.
+
+* *Nested categories.* Issues can be viewed from different perspectives. Typically, an issue is related to various aspects of technical, conceptual, or organizational levels. Such multi-perspective arrangements can be captured by Ag using nested categories (all categories are arranged in a tree). Issues can be linked to one or more categories.
+
+* *Smart tab auto-completion* on the command line interface. 
