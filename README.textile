@@ -30,21 +30,156 @@ $ cd ag
 Install the Paint ruby gem:
 
 bc. $ gem install paint
--> you may have to make that a sudo gem install
+# you may have to make that a sudo gem install
 
 Create symbolic links (from this directory):
 
 bc. $ sudo ln -s ./ag /usr/local/bin/ag
--> use any path you like as long as it's in your $PATH
+# use any path you like as long as it's in your $PATH
   
 bc. $ sudo ln -s ./include /usr/local/lib/site_ruby
--> choose any path which is in Ruby's search path, try this: $ ruby -e 'puts $:'
+# choose any path which is in Ruby's search path, try this: $ ruby -e 'puts $:'
   
 To enable BASH auto-completion, add this line to your ~/.bashrc:
 
 bc. complete -C /usr/local/bin/ag -o default ag
--> Re-launch your shell or source ~/.bashrc
+# Re-launch your shell or source ~/.bashrc
   
-That should be it. Try 'ag help' to get started.
+That should be it. Try @ag help@ to get started.
 
 h2. Tutorial
+
+You need a Git repository to get started. 
+
+h3. Creating and viewing issues
+
+Let's start using Ag by creating an issue:
+
+bc. $ ag new
+
+Ag will launch a text editor with a file which says:
+
+bc. Summary:
+
+Enter the issue's summary and enter some more details if you like:
+
+bc.. Summary: Colors are all wrong
+
+When you try to set the foreground color to red, it becomes yellow. How's that even possible?
+
+p. Save the file and exit the editor. Ag will respond with:
+
+bc. Added issue: tz9540-colors-are-all-wrong
+
+The small bit in front is the issue ID. You can use it to specify the issue (although it should be something different for you).
+
+bc. $ ag list 
+[tz9540]   Colors are all wrong
+
+Yes, it's still there! Let's look at the issue in detail:
+
+bc..$ ag show tz9540
+-----------------------------
+[tz9540] Colors are all wrong
+-----------------------------
+Summary: Colors are all wrong
+
+When you try to set the foreground color to red, it becomes yellow. How's that even possible?
+
+h3. Tab auto-completion
+
+p. While these IDs are really handy, they're hard to memorize and type. So here's the good news: You can use tab completion for this! To specify this issue on the command line, you can type any of the following:
+
+* @tz[TAB]@
+* @color[TAB]@
+* @wrong[TAB]@
+
+...or even shorter pieces. Ag will expand your input to the issue ID followed by the summary, like this:
+
+bc. $ ag sh[TAB] co[TAB]
+
+...will be turned into this:
+
+bc. $ ag show tz9540-colors-are-all-wrong 
+
+h3. Categories
+
+Let's add another issue:
+
+bc. $ ag new
+
+bc.. Summary: Implement XML export 
+
+We need some way to export everything to XML because you know, ENTERPRISE!
+
+bc. Added issue: br9077-implement-xml-export
+
+p. Now it's time to link our issues to some categories. In this case, we already have two types of issues - features and bugs, so let's create categories for them:
+
+bc. $ ag cat new
+
+bc. Summary: Issue type
+
+bc. Created new category: ko4993-issue-type
+# This is the parent category which will have 'feature' and 'bug' as its children.
+
+bc. $ ag cat new ko4993-issue-type
+# We can already specify on the CLI that this category should be a child of 'Issue type', but it could as well be done later using 'ag cat reparent'
+
+bc. Summary: Feature
+Parent: ko4993-issue-type
+
+bc. Created new category: hc6100-feature
+
+bc. $ ag cat new ko4993-issue-type
+
+bc. Summary: Bug
+Parent: ko4993-issue-type
+
+bc. Created new category: eo6845-bug
+
+Good. Let's look at our categories:
+
+bc. $ ag cat list 
+[ko4993] Issue type
+[eo6845] ├──Bug
+[hc6100] └──Feature
+
+h3. Link issues to categories
+
+Now we can link issues to categories:
+
+bc. $ ag list
+[br9077]   Implement XML export
+[tz9540]   Colors are all wrong
+
+bc. $ ag link xml[TAB] feat[TAB]
+# this will turn into: ag link br9077-implement-xml-export hc6100-feature
+
+bc. Linked issue br9077-implement-xml-export to 1 category
+
+bc. $ ag link col[TAB] bug[TAB]
+# this will turn into: ag link tz9540-colors-are-all-wrong eo6845-bug
+
+bc. Linked issue br9077-implement-xml-export to 1 category
+
+Now the issues are linked to the categories:
+
+bc. $ ag list
+[br9077]   Implement XML export (Feature)
+[tz9540]   Colors are all wrong (Bug)
+
+Want to see which bugs are there?
+
+bc. $ ag list bug[TAB]
+# this will turn into: ag list eo6845-bug
+
+bc. [tz9540]   Colors are all wrong (Bug)
+
+h3. Wrap up
+
+No you should be able to create issues and categories. Use @ag help@ to learn more about other commands. Once you've set up some categories, you can already specify them on the command line when you create an issue. For example, to file a new bug:
+
+bc. $ ag new bug[TAB]
+
+The newly created issue will be linked to @eo6845-bug@.
