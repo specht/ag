@@ -222,7 +222,7 @@ h3. Can we start working on an issue already?
 Alright, let's fix that strange color bug:
 
 bc. $ ag start col[TAB]
-# this will turn into: ag start bc. $ ag start col[TAB]
+# this will turn into: ag start tz9540-colors-are-all-wrong
 
 bc. Switched to a new branch 'tz9540-colors-are-all-wrong'
 
