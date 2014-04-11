@@ -240,5 +240,5 @@ h2. To do
 * there should be a way to restore a previously deleted issue or category
 * search results should be more clear (right now, you find removed issues but you can't tell 
   from the search results that they have been deleted)
-* web interface and reporting
+* web interface and reporting (oh, the possibilities!)
 * Agile?
