@@ -31,6 +31,22 @@ class Ag
         @editor = 'nano'
         @editor = ENV['EDITOR'] if ENV['EDITOR']
 
+        CliDispatcher::launch do |ac|
+            
+            ac.option('help') do |ac|
+                ac.option('cat') do |ac|
+                    ['new', 'list', 'show', 'edit', 'reparent', 'rm'].each do |x|
+                        ac.option(x)
+                    end
+                end
+                ['new', 'list', 'show', 'oneline', 'edit',
+                 'link', 'unlink', 'start', 'rm', 'search', 'log'].each do |x|
+                    ac.option(x)
+                end
+                ac.handler { |args| run_pager(); show_help(args) }
+            end
+        end
+        
         begin
             @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
         rescue Rugged::RepositoryError => e
@@ -929,7 +945,7 @@ Usage: ag cat reparent <child> <parent>
 Assign <parent> as the parent category of <child> (<parent> can be null).
 
 __cat/rm
-Usage: ag rm <category>
+Usage: ag cat rm <category>
 
 Remove a category.
 
@@ -946,20 +962,27 @@ at any time.
 __list
 Usage: ag list
 
+List all issues.
+
 __show
 Usage: ag show <issue>
+Show raw issue information.
 
 __oneline
 Usage: ag oneline <issue>
+Show condensed issue information in a single line.
 
 __edit
 Usage: ag edit <issue>
+Edit an issue.
 
 __link
 Usage: ag link <issue> <category> [<category> ...]
+Link an issue to one or more categories.
 
 __unlink
 Usage: ag unlink <issue> <category> [<category> ...]
+Unlink an issue from one or more categories.
 
 __start
 Usage: ag start <issue>
@@ -971,11 +994,14 @@ commits made in this branch should be linked to.
 
 __rm
 Usage: ag rm <issue>
+Remove an issue.
 
 __search
 Usage: ag search <keywords>
+Search for categories or issues.
 
 __log:
 Usage: ag log
+Show of a log of Ag activities.
 END
 end

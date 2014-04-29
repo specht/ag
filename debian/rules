@@ -1,0 +1,39 @@
+#!/usr/bin/make -f
+
+#DEB_COMPRESS_EXCLUDE = vym.pdf
+
+#include /usr/share/cdbs/1/rules/patchsys-quilt.mk
+#include /usr/share/quilt/quilt.make
+include /usr/share/cdbs/1/rules/debhelper.mk
+#include /usr/share/cdbs/1/class/qmake.mk
+#QMAKE=qmake-qt4
+
+clean::
+#	rm -f lang/vym_de.qm
+#	rm -f lang/vym_en.qm
+#	rm -f lang/vym_es.qm
+#	rm -f lang/vym_it.qm
+# 	rm -f proteomatic
+
+# common-configure-arch::
+# 	lrelease Proteomatic.pro
+
+common-install-arch::
+# 	gem install rugged json highline paint
+# 	sudo ln -s ./ag /usr/local/bin/ag
+	cp -p $(CURDIR)/ag $(CURDIR)/debian/ag/opt/ag/
+	cp -pr $(CURDIR)/include $(CURDIR)/debian/ag/opt/ag/
+	dh_link /opt/ag/ag /usr/local/bin/ag
+	dh_link /opt/ag/include /usr/lib/ruby/1.9.1/ag
+# 	install -m 0644 src/icons/proteomatic-pipeline.svg $(CURDIR)/debian/proteomatic/usr/share/pixmaps/
+# 	install -D -m 644 debian/x-proteomatic.desktop debian/proteomatic/usr/share/mimelnk/application/x-proteomatic.desktop
+	#mv $(CURDIR)/debian/vym/usr/share/vym/demos $(CURDIR)/debian/vym/usr/share/doc/vym
+	#mv $(CURDIR)/debian/vym/usr/share/doc/packages/vym/vym.pdf $(CURDIR)/debian/vym/usr/share/doc/vym 
+	#chmod 644 $(CURDIR)/debian/vym/usr/share/vym/icons/vym.ico
+	#rm -f $(CURDIR)/debian/vym/usr/share/vym/scripts/vym2txt.sh
+	#rm -f $(CURDIR)/debian/vym/usr/share/vym/scripts/vym2html.sh
+	#rmdir $(CURDIR)/debian/vym/usr/share/doc/packages/vym
+	#rmdir $(CURDIR)/debian/vym/usr/share/doc/packages/
+	#mkdir -p $(CURDIR)/debian/vym/usr/share/vym/doc/
+	#dh_link /usr/share/doc/vym/vym.pdf /usr/share/vym/doc/vym.pdf
+# 	dh_link	/usr/share/proteomatic/proteomatic-pipeline.svg /usr/share/pixmaps/proteomatic-pipeline.svg
