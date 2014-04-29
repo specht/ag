@@ -28,14 +28,15 @@ class Ag
         
         @config = Rugged::Config.global.to_hash
         
-        @editor = 'nano'
-        @editor = ENV['EDITOR'] if ENV['EDITOR']
+        @editor = ENV['EDITOR'] || 'nano'
 
         begin
             @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
         rescue Rugged::RepositoryError => e
-            puts e unless ENV.include?('COMP_LINE') or ARGV[0] == 'help'
-            exit(1)
+            unless ENV.include?('COMP_LINE') or ARGV[0] == 'help'
+                puts e 
+                exit(1)
+            end
         end
         
         if Rugged::Branch.lookup(@repo, '_ag')
@@ -166,6 +167,7 @@ class Ag
             end
                 
         end
+        puts "Unknown command: #{ARGV.first}. Try 'ag help' for a list of possible commands."
     end
 
     # auto-completion helper: define categories with slugs and slug parts

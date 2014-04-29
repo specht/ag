@@ -20,26 +20,8 @@ Here are some key points of Ag:
 
 h2. Installation
 
-Yeah. Right now, installation is a bit awkward. An installation package would be nice! But until that, try the following:
+An installation package for Debian-based Linux systems will be available within the next few days.
 
-Get the code first:
-
-bc. $ git clone https://github.com/specht/ag.git
-$ cd ag
-
-Install a handful of Ruby gems:
-
-bc. $ gem1.9.1 install rugged highline paint
-# you may have to make that a sudo gem install
-
-Create symbolic links (from this directory):
-
-bc. $ sudo ln -s ./ag /usr/local/bin/ag
-# use any path you like as long as it's in your $PATH
-  
-bc. $ sudo ln -s ./include /usr/local/lib/site_ruby
-# choose any path which is in Ruby's search path, try this: $ ruby -e 'puts $:'
-  
 To enable BASH auto-completion, add this line to your ~/.bashrc:
 
 bc. complete -C /usr/local/bin/ag -o default ag
