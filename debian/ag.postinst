@@ -3,8 +3,11 @@ set -e
 
 #DEBHELPER#
 
-if [ -x /usr/bin/update-desktop-database ]; then
-  update-desktop-database
+if ! gem spec rugged > /dev/null 2>&1; then
+  sudo gem1.9.1 install rugged
+fi
+if ! gem spec paint > /dev/null 2>&1; then
+  sudo gem1.9.1 install paint
 fi
 
 exit 0

@@ -1,17 +1,15 @@
 require 'date'
-require 'highline/import'
-require 'json'
 require 'open3'
-require 'rugged'
 require 'set'
 require 'tempfile'
 require 'webrick'
 require 'yaml'
 require 'rubygems'
+require 'rugged'
 require 'paint'
 
-require 'ag/cli-dispatcher'
-require 'ag/pager'
+require 'include/cli-dispatcher'
+require 'include/pager'
 
 COLOR_BLUE = '#3465a4'
 COLOR_RED = '#cc0000'
@@ -26,31 +24,16 @@ class Ag
     def initialize()
         srand()
         
+        
         @config = Rugged::Config.global.to_hash
         
         @editor = 'nano'
         @editor = ENV['EDITOR'] if ENV['EDITOR']
 
-        CliDispatcher::launch do |ac|
-            
-            ac.option('help') do |ac|
-                ac.option('cat') do |ac|
-                    ['new', 'list', 'show', 'edit', 'reparent', 'rm'].each do |x|
-                        ac.option(x)
-                    end
-                end
-                ['new', 'list', 'show', 'oneline', 'edit',
-                 'link', 'unlink', 'start', 'rm', 'search', 'log'].each do |x|
-                    ac.option(x)
-                end
-                ac.handler { |args| run_pager(); show_help(args) }
-            end
-        end
-        
         begin
             @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
         rescue Rugged::RepositoryError => e
-            puts e unless ENV.include?('COMP_LINE')
+            puts e unless ENV.include?('COMP_LINE') or ARGV[0] == 'help'
             exit(1)
         end
         
@@ -59,7 +42,6 @@ class Ag
         end
         
         CliDispatcher::launch do |ac|
-            
             ac.option('help') do |ac|
                 ac.option('cat') do |ac|
                     ['new', 'list', 'show', 'edit', 'reparent', 'rm'].each do |x|
