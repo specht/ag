@@ -7,6 +7,7 @@ require 'yaml'
 require 'rubygems'
 require 'rugged'
 require 'paint'
+require 'highline/import'
 
 require 'include/cli-dispatcher'
 require 'include/pager'
@@ -49,7 +50,7 @@ class Ag
                     end
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
-                 'link', 'unlink', 'start', 'rm', 'search', 'log'].each do |x|
+                 'connect', 'disconnect', 'start', 'rm', 'search', 'log'].each do |x|
                     ac.option(x)
                 end
                 ac.handler { |args| run_pager(); show_help(args) }
@@ -121,7 +122,7 @@ class Ag
                 ac.handler { |args| edit_object(args.first) }
             end
                 
-            ac.option('link') do |ac|
+            ac.option('connect') do |ac|
                 define_autocomplete_issues(ac, false, true) do |ac, collected_parts|
                     issue_id = collected_parts[1]
                     specified_cats = Set.new(collected_parts[2, collected_parts.size - 2])
@@ -129,18 +130,18 @@ class Ag
                     specified_cats |= Set.new(issue[:categories])
                     define_autocomplete_categories(ac, false, false, specified_cats)
                 end
-                ac.handler { |args| link_categories_to_issue(args) }
+                ac.handler { |args| connect_categories_to_issue(args) }
             end
                 
-            ac.option('unlink') do |ac|
+            ac.option('disconnect') do |ac|
                 define_autocomplete_issues(ac, false, true) do |ac, collected_parts|
                     issue_id = collected_parts[1]
                     specified_cats = Set.new(collected_parts[2, collected_parts.size - 2])
                     issue = load_issue(issue_id)
-                    linked_categories = Set.new(issue[:categories])
-                    define_autocomplete_categories(ac, false, false, specified_cats, linked_categories)
+                    connected_categories = Set.new(issue[:categories])
+                    define_autocomplete_categories(ac, false, false, specified_cats, connected_categories)
                 end
-                ac.handler { |args| unlink_categories_from_issue(args) }
+                ac.handler { |args| disconnect_categories_from_issue(args) }
             end
                 
             ac.option('start') do |ac|
@@ -585,17 +586,17 @@ class Ag
     end
 
     def new_issue(categories = [])
-        linked_cats = Set.new()
+        connected_cats = Set.new()
         categories.each do |cat|
             cat = cat[0, 6]
             category = load_category(cat)
-            linked_cats << cat
+            connected_cats << cat
         end
         id = gen_id()
         
         template = "Summary: "
-        unless linked_cats.empty?
-            template += "\nCategories: #{linked_cats.map { |x| load_category(x)[:slug]}.to_a.sort.join(', ')}"
+        unless connected_cats.empty?
+            template += "\nCategories: #{connected_cats.map { |x| load_category(x)[:slug]}.to_a.sort.join(', ')}"
         end
         issue = parse_object(call_editor(template), id)
         issue[:type] = 'issue'
@@ -672,11 +673,11 @@ class Ag
             end
         end
         
-        # If any current issues are linked to this category, we shouldn't delete it
+        # If any current issues are connected to this category, we shouldn't delete it
         all_issue_ids(false).each do |check_id|
             issue = load_issue(check_id)
             if issue[:categories].include?(cat[:id])
-                puts "Error: There are issues which are linked to this category, unable to continue."
+                puts "Error: There are issues which are connected to this category, unable to continue."
                 exit(1)
             end
         end
@@ -690,9 +691,9 @@ class Ag
         end
     end
     
-    def link_categories_to_issue(args)
+    def connect_categories_to_issue(args)
         if args.size < 2
-            raise "Two or more arguments required for link_categories_to_issue."
+            raise "Two or more arguments required for connect_categories_to_issue."
         end
         issue = load_issue(args.first)
         (1...args.size).each do |i|
@@ -702,24 +703,24 @@ class Ag
             end
             issue[:categories] << category[:id]
         end
-        commit_object(issue[:id], issue, "Linked issue #{issue[:slug]} to #{args.size - 1} categor#{((args.size - 1) == 1) ? 'y' : 'ies'}", true)
+        commit_object(issue[:id], issue, "Connected issue #{issue[:slug]} to #{args.size - 1} categor#{((args.size - 1) == 1) ? 'y' : 'ies'}", true)
     end
 
-    def unlink_categories_from_issue(args)
+    def disconnect_categories_from_issue(args)
         if args.size < 2
-            raise "Two or more arguments required for unlink_categories_from_issue."
+            raise "Two or more arguments required for disconnect_categories_from_issue."
         end
         issue = load_issue(args.first)
         (1...args.size).each do |i|
             category = load_category(args[i])
             unless issue[:categories].include?(category[:id])
-                raise "Issue #{issue[:slug]} is not linked to category #{category[:slug]}"
+                raise "Issue #{issue[:slug]} is not connected to category #{category[:slug]}"
             end
             issue[:categories] = issue[:categories].select do |x|
                 x != category[:id]
             end
         end
-        commit_object(issue[:id], issue, "Unlinked issue #{issue[:slug]} from #{args.size - 1} categor#{((args.size - 1) == 1) ? 'y' : 'ies'}", true)
+        commit_object(issue[:id], issue, "Disconnected issue #{issue[:slug]} from #{args.size - 1} categor#{((args.size - 1) == 1) ? 'y' : 'ies'}", true)
     end
 
     def rm_issue(id)
@@ -887,8 +888,8 @@ list          List all issues
 show          Show raw issue information
 oneline       Show condensed issue information in a single line
 edit          Edit an issue
-link          Link an issue to a category
-unlink        Unlink an issue from a category
+connect       Connect an issue to a category
+disconnect    Disconnect an issue from a category
 start         Start working on an issue
 rm            Remove an issue
 
@@ -932,13 +933,13 @@ Usage: ag cat rm <category>
 Remove a category.
 
 This won't work if the category has child categories or if there are currently
-any issues linked to this category. Interactive user confirmation is required.
+any issues connected to this category. Interactive user confirmation is required.
 
 __new
 Usage: ag new [<categories>]
 
 Create a new issue. Optionally, categories can be specified which the issue
-should be linked to. It is possible to add and remove links to categories
+should be connected to. It is possible to add and remove connections to categories
 at any time.
 
 __list
@@ -958,13 +959,13 @@ __edit
 Usage: ag edit <issue>
 Edit an issue.
 
-__link
-Usage: ag link <issue> <category> [<category> ...]
-Link an issue to one or more categories.
+__connect
+Usage: ag connect <issue> <category> [<category> ...]
+Connect an issue to one or more categories.
 
-__unlink
-Usage: ag unlink <issue> <category> [<category> ...]
-Unlink an issue from one or more categories.
+__disconnect
+Usage: ag disconnect <issue> <category> [<category> ...]
+Disconnect an issue from one or more categories.
 
 __start
 Usage: ag start <issue>
@@ -972,7 +973,7 @@ Usage: ag start <issue>
 Start working on an issue. Ag will create a topic branch for the specified issue.
 The branch name starts with the issue ID followed by a dash, and through this 
 pattern the git prepare-commit-message hook is able to know which issue all 
-commits made in this branch should be linked to.
+commits made in this branch should be connected to.
 
 __rm
 Usage: ag rm <issue>

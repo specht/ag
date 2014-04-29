@@ -9,5 +9,8 @@ fi
 if ! gem spec paint > /dev/null 2>&1; then
   sudo gem1.9.1 install paint
 fi
+if ! gem spec highline > /dev/null 2>&1; then
+  sudo gem1.9.1 install highline
+fi
 
 exit 0

@@ -9,7 +9,7 @@ Ag is an issue tracker built on top of Git. Sound familiar? You bet. Here's the 
 .PP
 Previously, I would have my code in a Git repository and my issues in a web-based issue tracking system. Put feature ideas and bug reports in the issue tracker, modify the code and resolve issues over time. From the issue tracker's point of view, issues are marked as resolved after some time, but there's no code or commits connected to it. Wouldn't it be useful to see which commits have been made to implement a feature or to resolve a bug?
 .PP
-Too bad it's laborious to link issues and commits this way - if there was such a connection, we would be able to tell not only who has changed the code and when, but we'd also be able to tell _why_ the code has been changed (and not by means of reading commit messages, but using properly categorized issues from the issue tracker). Commits could be easily (and automatically) categorized into _feature_ or _bug_, for example, or into various other aspects of the software project.
+Too bad it's laborious to connect issues and commits this way - if there was such a connection, we would be able to tell not only who has changed the code and when, but we'd also be able to tell _why_ the code has been changed (and not by means of reading commit messages, but using properly categorized issues from the issue tracker). Commits could be easily (and automatically) categorized into _feature_ or _bug_, for example, or into various other aspects of the software project.
 .PP
 Here are some key points of Ag:
 .TP
@@ -17,9 +17,9 @@ Here are some key points of Ag:
 .TP
 * Keeping \fBissues in a separate Git branch\fP doesn't spill issue-related information into your code  tree.
 .TP
-* \fBNo more 'um... fixed this and that' commit messages.\fP When you work with issues, you have  already specified your intentions behind every issue, possibly aided by nested categories. When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic branch and it will automatically prepare the commit message to establish the link between a commit and an issue. Feel free to add comments if your commit needs more explaining.
+* \fBNo more 'um... fixed this and that' commit messages.\fP When you work with issues, you have  already specified your intentions behind every issue, possibly aided by nested categories. When you tell Ag that you're starting to work on an issue, Ag creates a dedicated topic branch and it will automatically prepare the commit message to establish the connection between a commit and an issue. Feel free to add comments if your commit needs more explaining.
 .TP
-* \fBNested categories.\fP Issues can be viewed from different perspectives. Typically, an issue is related to various aspects of technical, conceptual, or organizational levels. Such multi-perspective arrangements can be captured by Ag using nested categories (all categories are arranged in a tree). Issues can be linked to one or more categories.
+* \fBNested categories.\fP Issues can be viewed from different perspectives. Typically, an issue is related to various aspects of technical, conceptual, or organizational levels. Such multi-perspective arrangements can be captured by Ag using nested categories (all categories are arranged in a tree). Issues can be connected to one or more categories.
 .TP
 * \fBSmart tab auto-completion\fP on the command line interface. 
 .SH OPTIONS
@@ -45,14 +45,14 @@ Assign <parent> as the parent category of <child> (<parent> can be null).
 cat rm <category>
 Remove a category.
 This won't work if the category has child categories or if there are currently
-any issues linked to this category. Interactive user confirmation is required.
+any issues connected to this category. Interactive user confirmation is required.
 .PP
 \fBIssue-related commands:\fP
 .PP
 .TP
 new [<categories>]
 Create a new issue. Optionally, categories can be specified which the issue
-should be linked to. It is possible to add and remove links to categories
+should be connected to. It is possible to add and remove connections to categories
 at any time.
 .TP
 list
@@ -67,17 +67,17 @@ Show condensed issue information in a single line.
 edit <issue>
 Edit an issue.
 .TP
-link <issue> <category> [<category> ...]
-Link an issue to one or more categories.
+connect <issue> <category> [<category> ...]
+Connect an issue to one or more categories.
 .TP
-unlink <issue> <category> [<category> ...]
-Unlink an issue from one or more categories.
+Disconnect <issue> <category> [<category> ...]
+Disconnect an issue from one or more categories.
 .TP
 start <issue>
 Start working on an issue. Ag will create a topic branch for the specified issue.
 The branch name starts with the issue ID followed by a dash, and through this 
 pattern the git prepare-commit-message hook is able to know which issue all 
-commits made in this branch should be linked to.
+commits made in this branch should be connected to.
 .TP
 rm <issue>
 Remove an issue.
