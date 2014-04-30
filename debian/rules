@@ -4,5 +4,6 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 
 common-install-arch::
 	cp -p $(CURDIR)/ag $(CURDIR)/debian/ag/opt/ag/
+	cp -p $(CURDIR)/setup_ag_completion $(CURDIR)/debian/ag/etc/bash_completion.d/ag
 	cp -pr $(CURDIR)/include $(CURDIR)/debian/ag/opt/ag/
 	dh_link /opt/ag/ag /usr/bin/ag

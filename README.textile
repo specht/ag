@@ -26,11 +26,6 @@ bc. $ sudo add-apt-repository ppa:micha-specht/ag
 $ sudo apt-get update
 $ sudo apt-get install ag
 
-To enable BASH auto-completion, add this line to your ~/.bashrc:
-
-bc. complete -C ag -o default ag
-# Re-launch your shell or source ~/.bashrc
-  
 That should be it. Try @ag help@ to get started.
 
 h2. Tutorial
