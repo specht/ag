@@ -20,11 +20,15 @@ Here are some key points of Ag:
 
 h2. Installation
 
-An installation package for Debian-based Linux systems will be available within the next few days.
+There's an installation package for Debian-based Linux systems:
+
+bc. $ sudo add-apt-repository ppa:micha-specht/ag
+$ sudo apt-get update
+$ sudo apt-get install ag
 
 To enable BASH auto-completion, add this line to your ~/.bashrc:
 
-bc. complete -C /usr/local/bin/ag -o default ag
+bc. complete -C ag -o default ag
 # Re-launch your shell or source ~/.bashrc
   
 That should be it. Try @ag help@ to get started.

@@ -30,17 +30,19 @@ class Ag
         
         @editor = ENV['EDITOR'] || 'nano'
 
-        begin
-            @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
-        rescue Rugged::RepositoryError => e
-            unless ENV.include?('COMP_LINE') or ARGV[0] == 'help'
-                puts e 
+        unless ARGV.first == 'help'
+            begin
+                @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
+            rescue Rugged::RepositoryError => e
+                unless ENV.include?('COMP_LINE')
+                    puts e 
+                end
                 exit(1)
             end
-        end
-        
-        if Rugged::Branch.lookup(@repo, '_ag')
-            ensure_git_hook_present()
+            
+            if Rugged::Branch.lookup(@repo, '_ag')
+                ensure_git_hook_present()
+            end
         end
         
         CliDispatcher::launch do |ac|
