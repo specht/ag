@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby1.9.1
-$: << ((File::expand_path(File::dirname($0)) == '/usr/local/bin') ? '/opt/ag' : File::expand_path(File::dirname($0)))
+$: << ((File::expand_path(File::dirname($0)) == '/usr/bin') ? '/opt/ag' : File::expand_path(File::dirname($0)))
 require 'include/ag'
 
 ag = Ag.new()
