@@ -1,0 +1,1 @@
+complete -C ag -o default ag
