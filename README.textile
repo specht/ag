@@ -26,7 +26,7 @@ bc. $ sudo add-apt-repository ppa:micha-specht/ag
 $ sudo apt-get update
 $ sudo apt-get install ag
 
-That should be it. Try @ag help@ to get started.
+Restart your shell, and that should be it. Try @ag help@ to get started.
 
 h2. Tutorial
 
