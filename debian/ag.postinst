@@ -3,8 +3,13 @@ set -e
 
 #DEBHELPER#
 
-if ! gem spec rugged > /dev/null 2>&1; then
-  sudo gem1.9.1 install rugged
+# we need these so that the Rugged Gem gets built with ssh and https support
+# ...but we don't need remote support for Rugged, because it won't honor
+# ~/.ssh/config and thus can't connect to mah repositoreh
+# sudo apt-get install -y libssl-dev libssh2-1-dev
+
+if ! gem spec rugged -v 0.21.0 > /dev/null 2>&1; then
+  sudo gem1.9.1 install rugged -v 0.21.0
 fi
 if ! gem spec paint > /dev/null 2>&1; then
   sudo gem1.9.1 install paint

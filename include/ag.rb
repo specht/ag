@@ -4,7 +4,7 @@ require 'set'
 require 'tempfile'
 require 'webrick'
 require 'yaml'
-require 'rubygems'
+gem 'rugged', '=0.21.0'
 require 'rugged'
 require 'paint'
 require 'highline/import'
@@ -24,15 +24,14 @@ class Ag
     
     def initialize()
         srand()
-        
-        
+
         @config = Rugged::Config.global.to_hash
         
         @editor = ENV['EDITOR'] || 'nano'
 
         unless ARGV.first == 'help'
             begin
-                @repo = Rugged::Repository.new(Rugged::Repository.discover(Dir::pwd()))
+                @repo = Rugged::Repository.discover(Dir::pwd())
             rescue Rugged::RepositoryError => e
                 unless ENV.include?('COMP_LINE')
                     puts e 
@@ -40,7 +39,7 @@ class Ag
                 exit(1)
             end
             
-            if Rugged::Branch.lookup(@repo, '_ag')
+            if @repo.branches['_ag']
                 ensure_git_hook_present()
             end
         end
@@ -53,7 +52,8 @@ class Ag
                     end
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
-                 'connect', 'disconnect', 'start', 'rm', 'search', 'log'].each do |x|
+                 'connect', 'disconnect', 'start', 'rm', 
+                 'search', 'log', 'pull', 'push'].each do |x|
                     ac.option(x)
                 end
                 ac.handler { |args| run_pager(); show_help(args) }
@@ -168,6 +168,14 @@ class Ag
                 ac.handler { |args| run_pager(); log() }
             end
                 
+            ac.option('pull') do |ac|
+                ac.handler { |args| pull() }
+            end
+                
+            ac.option('push') do |ac|
+                ac.handler { |args| push() }
+            end
+                
         end
         puts "Unknown command: #{ARGV.first}. Try 'ag help' for a list of possible commands."
     end
@@ -226,7 +234,7 @@ class Ag
     def all_ids_with_sha1(recursive = true, which = nil)
         ids = {}
         
-        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        ag_branch = @repo.branches['_ag']
         if ag_branch
             walker = Rugged::Walker.new(@repo)
             walker.push(ag_branch.target)
@@ -332,7 +340,7 @@ class Ag
 
     def load_object(id)
         id = id[0, 6]
-        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        ag_branch = @repo.branches['_ag']
         if ag_branch
             walker = Rugged::Walker.new(@repo)
             walker.push(ag_branch.target)
@@ -392,8 +400,30 @@ class Ag
         end
         return results
     end
+    
+    def check_if_ag_is_set_up()
+        unless @repo.branches['_ag']
+            remote_ag_branches = @repo.branches.select { |x| x.name[-4, 4] == '/_ag' }.map { |x| x.name }
+            puts remote_ag_branches.to_yaml
+            if remote_ag_branches.size == 1
+                # There's exactly one remote _ag branch, fetch and track it.
+                system("git checkout --track -b _ag #{remote_ag_branches.first}")
+            elsif remote_ag_branches.size > 1
+                puts "There is more than one remote _ag branch: #{remote_ag_branches.join(', ')} and"
+                puts "I don't know which one to pick. Pick one and fetch it with:"
+                ptus "git checkout --track -b _ag [url]"
+            else
+                puts "Ag has not been set up for this repository, as there's no _ag branch yet."
+                puts "You can use `ag cat new` or `ag new` to define categories or issues, which"
+                puts "will set up Ag in this repository."
+            end
+        end
+    end
 
     def list_issues(args)
+
+        check_if_ag_is_set_up()
+        
         filter_cats = nil
         unless args.empty?
             filter_cats = args.map do |cat_id|
@@ -551,14 +581,14 @@ class Ag
         options[:committer] = { :email => @config['user.email'], :name => @config['user.name'], :time => Time.now }
         options[:message] ||= comment
         options[:parents] = []
-        if Rugged::Branch.lookup(@repo, '_ag')
+        if @repo.branches['_ag']
             options[:parents] = [ @repo.rev_parse_oid('_ag') ].compact
             options[:update_ref] = 'refs/heads/_ag'
         end
 
         commit = Rugged::Commit.create(@repo, options)
         
-        unless Rugged::Branch.lookup(@repo, '_ag')
+        unless @repo.branches['_ag']
             @repo.create_branch('_ag', commit)
         end
         puts options[:message]
@@ -838,7 +868,7 @@ class Ag
 =end    
     
     def log()
-        ag_branch = Rugged::Branch.lookup(@repo, '_ag')
+        ag_branch = @repo.branches['_ag']
         if ag_branch
             
             walker = Rugged::Walker.new(@repo)
@@ -854,6 +884,34 @@ class Ag
                 puts "#{commit.author[:time].strftime('%Y/%m/%d %H:%M:%S')} | #{sprintf('%-' + max_author_width.to_s + 's', commit.author[:name])} | #{commit.message}"
             end
         end
+    end
+    
+    def pull()
+        remote_name = 'origin'
+        check_if_ag_is_set_up()
+        system("git fetch #{remote_name} _ag")
+        # the line below should work because we have just fetched a single branch
+        remote_tip = `git rev-parse FETCH_HEAD`.split(' ').first
+        local_tip = `git show-ref refs/heads/_ag`.split(' ').first
+        if local_tip != remote_tip
+            # We have to update to branch and merge. See if we can do a fast-forward.
+            if `git merge-base #{local_tip} #{remote_tip}`.strip == local_tip
+                # It's super easy!
+                puts "Fast forward!"
+                system("git update-ref -m \"merge #{remote_tip[0, 7]}: Fast forward\" refs/heads/_ag #{remote_tip}")
+            else
+                puts "Unable to fast-forward."
+                puts "Unfortunately, existing upstream changes could not be merged automatically."
+                puts "To fix this, check out the _ag branch, pull the upstream changes and resolve"
+                puts "conflicts manually."
+            end
+        end
+    end
+    
+    def push()
+        remote_name = 'origin'
+        check_if_ag_is_set_up()
+        system("git push #{remote_name} _ag")
     end
     
     def show_help(args)
@@ -898,6 +956,8 @@ start         Start working on an issue
 rm            Remove an issue
 
 Miscellaneous commands:
+pull          Pull upstream changes
+push          Push changes upstream
 search        Search for categories or issues
 log           Show of a log of Ag activities
 help          Show usage information
