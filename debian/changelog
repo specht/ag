@@ -1,10 +1,4 @@
-ag (0.0.8) trusty; urgency=low
-
-  * Initial release
-
- -- Michael Specht <micha.specht@gmail.com>  Thu,  31 Jul 2014 16:00:00 +0200
-
-ag (0.0.8) precise; urgency=low
+ag (0.0.9) precise; urgency=low
 
   * Initial release
 

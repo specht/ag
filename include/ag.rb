@@ -404,7 +404,6 @@ class Ag
     def check_if_ag_is_set_up()
         unless @repo.branches['_ag']
             remote_ag_branches = @repo.branches.select { |x| x.name[-4, 4] == '/_ag' }.map { |x| x.name }
-            puts remote_ag_branches.to_yaml
             if remote_ag_branches.size == 1
                 # There's exactly one remote _ag branch, fetch and track it.
                 system("git checkout --track -b _ag #{remote_ag_branches.first}")
@@ -774,8 +773,15 @@ class Ag
     def start_working_on_issue(id)
         id = id[0, 6]
         issue = load_issue(id)
-        # if there's already a branch handling this issue, maybe don't create a new branch?
-        system("git checkout -b #{issue[:slug]}")
+        existing_branches = @repo.branches.select { |b| b.name[0, id.size + 1] == id + '-' }
+        if existing_branches.empty?
+            system("git checkout -b #{issue[:slug]}")
+        elsif existing_branches.size == 1
+            system("git checkout #{existing_branches.first.name}")
+        else
+            puts "There are multiple branches connected to the issue, can't decide which one to check out:"
+            puts existing_branches.map { |x| x.name }.join("\n")
+        end
     end
     
     def search(keywords)
@@ -1042,6 +1048,14 @@ commits made in this branch should be connected to.
 __rm
 Usage: ag rm <issue>
 Remove an issue.
+
+__pull
+Usage: ag pull
+Pull upstream changes.
+
+__push
+Usage: ag push
+Push changes upstream.
 
 __search
 Usage: ag search <keywords>
