@@ -624,16 +624,22 @@ class Ag
         commit_object(id, category, "Created new category: #{category[:slug]}")
     end
 
-    def new_issue(categories = [])
+    def new_issue(args)
         connected_cats = Set.new()
-        categories.each do |cat|
-            cat = cat[0, 6]
-            category = load_category(cat)
-            connected_cats << cat
+        while !args.empty?
+            begin
+                cat = args.first[0, 6]
+                category = load_category(cat)
+                connected_cats << cat
+                args.shift
+            rescue RuntimeError
+                break
+            end
         end
         id = gen_id()
         
-        template = "Summary: "
+        summary = args.join(' ')
+        template = "Summary: #{summary}"
         unless connected_cats.empty?
             template += "\nCategories: #{connected_cats.map { |x| load_category(x)[:slug]}.to_a.sort.join(', ')}"
         end
@@ -1012,11 +1018,11 @@ This won't work if the category has child categories or if there are currently
 any issues connected to this category. Interactive user confirmation is required.
 
 __new
-Usage: ag new [<categories>]
+Usage: ag new [<categories>] [<title>]
 
 Create a new issue. Optionally, categories can be specified which the issue
 should be connected to. It is possible to add and remove connections to categories
-at any time.
+at any time. You may specify the issue title on the command line.
 
 __list
 Usage: ag list
