@@ -594,21 +594,27 @@ class Ag
     end
 
     def new_category(args)
-        if args.size > 1
-            raise "Categories can only have one parent."
-        end
-        
         parent_cat = nil
+
         if args.size > 0
-            parent_cat = load_category(args.first)
+            begin
+                parent_cat = load_category(args.first)
+                args.shift
+            rescue RuntimeError
+                parent_cat = nil
+            end
         end
+        summary = args.join(' ')
         id = gen_id()
         
-        template = "Summary: "
+        template = "Summary: #{summary}"
         if parent_cat
             template += "\nParent: #{parent_cat[:slug]}"
         end
-        category = parse_object(call_editor(template), id)
+        if summary.strip.empty?
+            template = call_editor(template)
+        end
+        category = parse_object(template, id)
         category[:type] = 'category'
         
         if category[:summary].empty?
@@ -973,9 +979,9 @@ Ag supports tab completion pretty well - try to specify category or
 issue IDs via keywords, they will be auto-completed.
 
 __cat/new
-Usage: ag cat new [<parent>]
+Usage: ag cat new [<parent>] [<title>]
 
-Create a new category. Optionally, specify a parent category ID.
+Create a new category. Optionally, specify a parent category ID and/or the category title.
 
 __cat/list
 Usage: ag cat list
