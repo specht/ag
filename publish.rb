@@ -11,7 +11,7 @@ puts "Publishing Ag #{tag}..."
     system("cd _build/src && tar xvzf ag_#{tag}.tar.gz")
 
     File::open('_build/src/debian/changelog', 'w') do |f|
-        f.puts "ag (#{tag}) #{release}; urgency=low"
+        f.puts "ag (#{tag}~#{release}) #{release}; urgency=low"
         f.puts
         f.puts "  * Initial release"
         f.puts
@@ -20,5 +20,5 @@ puts "Publishing Ag #{tag}..."
     end
 
     system("cd _build/src && debuild -S")
-    system("dput ppa:micha-specht/ag _build/ag_#{tag}_source.changes")
+    system("dput ppa:micha-specht/ag _build/ag_#{tag}~#{release}_source.changes")
 end

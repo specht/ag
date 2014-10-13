@@ -330,8 +330,8 @@ class Ag
         description = lines.join("\n")
         description.strip!
         
-        summary_pieces = summary.downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.strip.empty? }[0, 8]
-        slug = "#{id}-#{summary_pieces.join('-')}"
+        summary_pieces = summary.downcase.gsub(/[^a-z0-9]/, ' ').split(' ').select { |x| !x.strip.empty? }
+        slug = "#{id}-#{summary_pieces[0, 8].join('-')}"
         
         return {:id => id, :original => original, :parent => parent,
                 :categories => categories, :summary => summary, 
