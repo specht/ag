@@ -9,13 +9,13 @@ set -e
 # sudo apt-get install -y libssl-dev libssh2-1-dev
 
 if ! gem spec rugged -v 0.21.0 > /dev/null 2>&1; then
-  sudo gem1.9.1 install rugged -v 0.21.0
+  sudo gem install rugged -v 0.21.0
 fi
 if ! gem spec paint > /dev/null 2>&1; then
-  sudo gem1.9.1 install paint
+  sudo gem install paint
 fi
 if ! gem spec highline > /dev/null 2>&1; then
-  sudo gem1.9.1 install highline
+  sudo gem install highline
 fi
 
 echo "-------------------------------------------------------------------"
