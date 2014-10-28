@@ -112,7 +112,21 @@ class Ag
             
             ac.option('show') do |ac|
                 define_autocomplete_issues(ac)
-                ac.handler { |args| run_pager(); show_object(args.first) }
+                ac.handler do |args|
+                    issue = nil
+                    if args.first
+                        issue = args.first
+                    else
+                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
+                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
+                    end
+                    unless issue
+                        puts "Error: No issue specified (and also not currently in an issue branch)."
+                        exit(1)
+                    end
+                    run_pager()
+                    show_object(issue)
+                end
             end
                 
             ac.option('oneline') do |ac|
@@ -122,7 +136,20 @@ class Ag
                 
             ac.option('edit') do |ac|
                 define_autocomplete_issues(ac)
-                ac.handler { |args| edit_object(args.first) }
+                ac.handler do |args|
+                    issue = nil
+                    if args.first
+                        issue = args.first
+                    else
+                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
+                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
+                    end
+                    unless issue
+                        puts "Error: No issue specified (and also not currently in an issue branch)."
+                        exit(1)
+                    end
+                    edit_object(issue)
+                end
             end
                 
             ac.option('connect') do |ac|
