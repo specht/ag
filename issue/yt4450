@@ -1,2 +1,3 @@
 Summary: bug * in ag list does not work if commits cannot be reached from current position
+Categories: xv7035-bug
 
