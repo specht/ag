@@ -407,26 +407,56 @@ class Ag
     
     def find_commits_for_issues()
         results = {}
-        @repo.references.each('refs/heads/*').each do |ref|
-            walker = Rugged::Walker.new(@repo)
-            walker.push(ref.target)
-            walker.each do |commit|
-                message = commit.message
-                if message =~ /^\[[a-z]{2}\d{4}\]/
-                    id = message[1, 6]
-                    results[id] ||= {
-                        :count => 0,
-                        :time_min => commit.time,
-                        :time_max => commit.time,
-                        :authors => Set.new(),
-                        :ref_names => Set.new()
-                    }
-                    results[id][:count] += 1
-                    results[id][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
-                    results[id][:ref_names] << ref.name
-                    results[id][:time_min] = commit.time if commit.time < results[id][:time_min]
-                    results[id][:time_max] = commit.time if commit.time > results[id][:time_max]
-                end
+        starting_points = Set.new()
+        @repo.branches.each do |branch|
+            next if branch.name[-3, 3] == '_ag'
+            tid = nil
+            while branch.target.class == Rugged::Reference
+                branch = branch.resolve
+            end
+            starting_points << branch.resolve.target_id
+        end
+        starting_points << @repo.head.target_id
+        walker = Rugged::Walker.new(@repo)
+        walker.push(@repo.head.target_id)
+        walker.each do |commit|
+            message = commit.message
+            if message =~ /^\[[a-z]{2}\d{4}\]/
+                id = message[1, 6]
+                results[id] ||= {
+                    :count => 0,
+                    :time_min => commit.time,
+                    :time_max => commit.time,
+                    :authors => Set.new(),
+                    :reachable_from_head => false
+                }
+                results[id][:reachable_from_head] = true
+                results[id][:count] += 1
+                results[id][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
+                results[id][:time_min] = commit.time if commit.time < results[id][:time_min]
+                results[id][:time_max] = commit.time if commit.time > results[id][:time_max]
+            end
+        end
+        
+        walker.reset()
+        starting_points.each do |oid|
+            walker.push(oid)
+        end
+        walker.each do |commit|
+            message = commit.message
+            if message =~ /^\[[a-z]{2}\d{4}\]/
+                id = message[1, 6]
+                results[id] ||= {
+                    :count => 0,
+                    :time_min => commit.time,
+                    :time_max => commit.time,
+                    :authors => Set.new(),
+                    :reachable_from_head => false
+                }
+                results[id][:count] += 1
+                results[id][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
+                results[id][:time_min] = commit.time if commit.time < results[id][:time_min]
+                results[id][:time_max] = commit.time if commit.time > results[id][:time_max]
             end
         end
         return results
@@ -475,10 +505,12 @@ class Ag
             symbol = ' '
             if commits_for_issues.include?(id)
                 has_commits = true
-                symbol = "+"
-                if commits_for_issues[id][:ref_names].include?(@repo.head.name)
+                symbol = "\u25ab"
+                symbol = "\u26ac"
+                if commits_for_issues[id][:reachable_from_head]
                     has_commits_in_head = true
-                    symbol = '*'
+                    symbol = "\u25aa"
+                    symbol = "\u26ab"
                 end
             end
             line = Paint["[#{issue[:id]}] #{symbol} #{issue[:summary]}", COLOR_ISSUE]
