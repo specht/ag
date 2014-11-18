@@ -814,7 +814,12 @@ class Ag
             puts "No commits found in any branches."
         else
             puts "Commits found in:"
-            puts commits_in_branches.to_a.sort.map { |x| '- ' + x }.join("\n")
+            commits_in_branches = commits_in_branches.to_a.sort do |a, b|
+                ta = (a.include?('/') ? a : ('/' + a)).split('/')
+                tb = (b.include?('/') ? b : ('/' + b)).split('/')
+                (ta[0] == tb[0]) ? (ta[1] <=> tb[1]) : (ta[0] <=> tb[0])
+            end
+            puts commits_in_branches.map { |x| '- ' + x }.join("\n")
         end
     end
     
