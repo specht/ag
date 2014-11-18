@@ -229,7 +229,7 @@ bc. $ ag list
 [br9077]   Implement XML export (Feature)
 [tz9540] * Colors are all wrong (Bug)
 
-The asterisk means that there has already work been done for this issue, that is, there is at least one commit which references the issue. 
+The asterisk (*) means that there has already work been done for this issue, that is, there is at least one commit which references the issue. A plus (+) indicates that commits have been made for an issue but in a different branch.
 
 h3. Resolving issues
 
