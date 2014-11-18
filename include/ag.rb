@@ -53,7 +53,7 @@ class Ag
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
                  'connect', 'disconnect', 'start', 'rm', 
-                 'search', 'log', 'pull', 'push'].each do |x|
+                 'search', 'log', 'locate', 'pull', 'push'].each do |x|
                     ac.option(x)
                 end
                 ac.handler { |args| run_pager(); show_help(args) }
@@ -195,6 +195,24 @@ class Ag
                 ac.handler { |args| run_pager(); log() }
             end
                 
+            ac.option('locate') do |ac|
+                define_autocomplete_issues(ac)
+                ac.handler do |args|
+                    issue = nil
+                    if args.first
+                        issue = args.first
+                    else
+                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
+                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
+                    end
+                    unless issue
+                        puts "Error: No issue specified (and also not currently in an issue branch)."
+                        exit(1)
+                    end
+                    locate_issue(issue)
+                end
+            end
+
             ac.option('pull') do |ac|
                 ac.handler { |args| pull() }
             end
@@ -365,9 +383,12 @@ class Ag
                 :description => description, :slug => slug, :slug_pieces => summary_pieces}
     end
 
-    def load_object(id)
+    def load_object(id, with_history = false)
         id = id[0, 6]
         ag_branch = @repo.branches['_ag']
+        object = nil
+        all_revisions = []
+        commit_for_revision = {}
         if ag_branch
             walker = Rugged::Walker.new(@repo)
             walker.push(ag_branch.target)
@@ -377,14 +398,26 @@ class Ag
                     test_id = obj[:name]
                     if test_id == id
                         # found something!
-                        object = parse_object(@repo.lookup(obj[:oid]).content, id)
-                        object[:type] = path[0, path.size - 1]
+                        unless object
+                            object = parse_object(@repo.lookup(obj[:oid]).content, id)
+                            object[:type] = path[0, path.size - 1]
+                        end
                         if ['issue', 'category'].include?(object[:type])
-                            return object
+                            if with_history
+                                all_revisions << obj[:oid] unless all_revisions.include?(commit)
+                                commit_for_revision[obj[:oid]] = commit
+                                break
+                            else
+                                return object
+                            end
                         end
                     end
                 end
             end
+        end
+        if object
+            all_commits = all_revisions.map { |x| commit_for_revision[x] }
+            return object, all_commits
         end
         raise "No such object: [#{id}]."
     end
@@ -410,7 +443,6 @@ class Ag
         starting_points = Set.new()
         @repo.branches.each do |branch|
             next if branch.name[-3, 3] == '_ag'
-            tid = nil
             while branch.target.class == Rugged::Reference
                 branch = branch.resolve
             end
@@ -505,12 +537,12 @@ class Ag
             symbol = ' '
             if commits_for_issues.include?(id)
                 has_commits = true
-                symbol = "\u25ab"
-                symbol = "\u26ac"
+                symbol = "\u21e2"
+#                 symbol = "\u26ac"
                 if commits_for_issues[id][:reachable_from_head]
                     has_commits_in_head = true
-                    symbol = "\u25aa"
-                    symbol = "\u26ab"
+                    symbol = "\u21d2"
+#                     symbol = "\u26ab"
                 end
             end
             line = Paint["[#{issue[:id]}] #{symbol} #{issue[:summary]}", COLOR_ISSUE]
@@ -729,16 +761,61 @@ class Ag
 
     def show_object(id)
         id = id[0, 6]
-        object = load_object(id)
+        object, all_commits = load_object(id, true)
         ol = get_oneline(id)
-        heading = "#{'-' * ol.size}\n#{ol}\n#{'-' * ol.size}"
-        if object[:type] == 'category'
-            heading = heading.split("\n").map { |x| Paint[x, COLOR_CATEGORY] }.join("\n")
-        elsif object[:type] == 'issue'
-            heading = heading.split("\n").map { |x| Paint[x, COLOR_ISSUE] }.join("\n")
+        color = (object[:type] == 'category') ? COLOR_CATEGORY : COLOR_ISSUE
+        heading = "#{'-' * ol.size}\n"
+        heading += "#{ol}\n"
+        heading += "#{'-' * ol.size}\n"
+        heading += "Created: #{all_commits.last.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.last.author[:name]}\n"
+        if all_commits.size > 1
+            heading += "Last updated: #{all_commits.first.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.first.author[:name]}\n"
         end
+        heading += "#{'-' * ol.size}\n"
+        heading = heading.split("\n").map { |x| Paint[x, color] }.join("\n")
         puts heading
         puts object_to_s(object)
+        
+    end
+    
+    def locate_issue(id)
+        id = id[0, 6]
+        issue = load_object(id)
+        unless issue[:type] == 'issue'
+            puts "Error: [#{id}] is not an issue."
+            exit(1)
+        end
+        
+        ol = get_oneline(id)
+        heading = "#{'-' * ol.size}\n"
+        heading += "#{ol}\n"
+        heading += "#{'-' * ol.size}\n"
+        heading = heading.split("\n").map { |x| Paint[x, COLOR_ISSUE] }.join("\n")
+        puts heading
+        
+        commits_in_branches = Set.new()
+        @repo.branches.each do |branch|
+            next if branch.name[-3, 3] == '_ag'
+            while branch.target.class == Rugged::Reference
+                branch = branch.resolve
+            end
+            walker = Rugged::Walker.new(@repo)
+            walker.push(branch.target_id)
+            walker.each do |commit|
+                message = commit.message
+                if message[0, 8] == "[#{id}]"
+                    commits_in_branches << branch.name
+                    break
+                end
+            end
+        end
+
+        if commits_in_branches.empty?
+            puts "No commits found in any branches."
+        else
+            puts "Commits found in:"
+            puts commits_in_branches.to_a.sort.map { |x| '- ' + x }.join("\n")
+        end
     end
     
     def edit_object(id)
@@ -1052,6 +1129,7 @@ pull          Pull upstream changes
 push          Push changes upstream
 search        Search for categories or issues
 log           Show of a log of Ag activities
+locate        Find branches which have commits for an issue
 help          Show usage information
 
 See 'ag help <command>' for more information on a specific command.
@@ -1150,5 +1228,9 @@ Search for categories or issues.
 __log:
 Usage: ag log
 Show of a log of Ag activities.
+
+__locate:
+Usage: ag locate <issue>
+Display all branches which have commits connected to an issue.
 END
 end
