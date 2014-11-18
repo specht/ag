@@ -407,22 +407,26 @@ class Ag
     
     def find_commits_for_issues()
         results = {}
-        walker = Rugged::Walker.new(@repo)
-        walker.push(@repo.head.target)
-        walker.each do |commit|
-            message = commit.message
-            if message =~ /^\[[a-z]{2}\d{4}\]/
-                id = message[1, 6]
-                results[id] ||= {
-                    :count => 0,
-                    :time_min => commit.time,
-                    :time_max => commit.time,
-                    :authors => Set.new()
-                }
-                results[id][:count] += 1
-                results[id][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
-                results[id][:time_min] = commit.time if commit.time < results[id][:time_min]
-                results[id][:time_max] = commit.time if commit.time > results[id][:time_max]
+        @repo.references.each('refs/heads/*').each do |ref|
+            walker = Rugged::Walker.new(@repo)
+            walker.push(ref.target)
+            walker.each do |commit|
+                message = commit.message
+                if message =~ /^\[[a-z]{2}\d{4}\]/
+                    id = message[1, 6]
+                    results[id] ||= {
+                        :count => 0,
+                        :time_min => commit.time,
+                        :time_max => commit.time,
+                        :authors => Set.new(),
+                        :ref_names => Set.new()
+                    }
+                    results[id][:count] += 1
+                    results[id][:authors] << "#{commit.author[:name]} <#{commit.author[:email]}>"
+                    results[id][:ref_names] << ref.name
+                    results[id][:time_min] = commit.time if commit.time < results[id][:time_min]
+                    results[id][:time_max] = commit.time if commit.time > results[id][:time_max]
+                end
             end
         end
         return results
@@ -466,7 +470,18 @@ class Ag
         
         all_issues.keys.sort.each do |id|
             issue = all_issues[id]
-            line = Paint["[#{issue[:id]}] #{commits_for_issues.include?(id) ? '*' : ' '} #{issue[:summary]}", COLOR_ISSUE]
+            has_commits = false
+            has_commits_in_head = false
+            symbol = ' '
+            if commits_for_issues.include?(id)
+                has_commits = true
+                symbol = "+"
+                if commits_for_issues[id][:ref_names].include?(@repo.head.name)
+                    has_commits_in_head = true
+                    symbol = '*'
+                end
+            end
+            line = Paint["[#{issue[:id]}] #{symbol} #{issue[:summary]}", COLOR_ISSUE]
             cats = issue[:categories].map do |cat_id|
                 category = load_category(cat_id)
                 category[:id]
