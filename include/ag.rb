@@ -389,15 +389,19 @@ class Ag
         object = nil
         all_revisions = []
         commit_for_revision = {}
+        deletion_commit = nil
+        stop_looking_for_deletion_commit = false
         if ag_branch
             walker = Rugged::Walker.new(@repo)
             walker.push(ag_branch.target)
             walker.each do |commit|
+                found_the_file = false
                 commit.tree.walk(:postorder) do |path, obj|
                     next unless obj[:type] == :blob
                     test_id = obj[:name]
                     if test_id == id
                         # found something!
+                        found_the_file = true
                         unless object
                             object = parse_object(@repo.lookup(obj[:oid]).content, id)
                             object[:type] = path[0, path.size - 1]
@@ -413,11 +417,18 @@ class Ag
                         end
                     end
                 end
+                unless stop_looking_for_deletion_commit
+                    if found_the_file
+                        stop_looking_for_deletion_commit = true
+                    else
+                        deletion_commit = commit
+                    end
+                end
             end
         end
         if object
             all_commits = all_revisions.map { |x| commit_for_revision[x] }
-            return object, all_commits
+            return object, all_commits, deletion_commit
         end
         raise "No such object: [#{id}]."
     end
@@ -761,7 +772,7 @@ class Ag
 
     def show_object(id)
         id = id[0, 6]
-        object, all_commits = load_object(id, true)
+        object, all_commits, deletion_commit = load_object(id, true)
         ol = get_oneline(id)
         color = (object[:type] == 'category') ? COLOR_CATEGORY : COLOR_ISSUE
         heading = "#{'-' * ol.size}\n"
@@ -770,6 +781,9 @@ class Ag
         heading += "Created: #{all_commits.last.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.last.author[:name]}\n"
         if all_commits.size > 1
             heading += "Last updated: #{all_commits.first.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.first.author[:name]}\n"
+        end
+        if deletion_commit
+            heading += "Deleted: #{deletion_commit.author[:time].strftime('%a %b %d, %Y')} by #{deletion_commit.author[:name]}\n"
         end
         heading += "#{'-' * ol.size}\n"
         heading = heading.split("\n").map { |x| Paint[x, color] }.join("\n")
