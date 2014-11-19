@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>Ag Commit Graph</title>
+<script src="#{PATH_TO_AG_INCLUDE}/visjs/vis.min.js"></script>
+<link href="#{PATH_TO_AG_INCLUDE}/visjs/vis.min.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div id="commit_graph"></div>
+
+<script type="text/javascript">
+
+#{DATA}
+
+var container = document.getElementById('commit_graph');
+
+var data= {
+    nodes: nodes,
+    edges: edges,
+};
+
+var options = {
+    width: '100%',
+    height: '100%',
+    hierarchicalLayout: {
+        layout: 'direction',
+        direction: 'RL', // UD
+        nodeSpacing: 500,
+        levelSeparation: 200
+    },
+    nodes: {
+        shape: 'dot'
+    },
+    edges: {
+        style: 'arrow'
+    },
+//     clustering: true,
+    keyboard: true
+};
+
+var graph = new vis.Network(container, data, options);
+
+graph.on('select', function (properties) {
+  console.log('selected nodes: ' + properties.nodes);
+});
+
+</script>
+
+</body>
+</html>
