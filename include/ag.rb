@@ -11,6 +11,7 @@ require 'highline/import'
 
 require 'include/cli-dispatcher'
 require 'include/pager'
+require 'include/table'
 
 COLOR_BLUE = '#3465a4'
 COLOR_RED = '#cc0000'
@@ -201,17 +202,8 @@ class Ag
             ac.option('locate') do |ac|
                 define_autocomplete_issues(ac)
                 ac.handler do |args|
-                    issue = nil
-                    if args.first
-                        issue = args.first
-                    else
-                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
-                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
-                    end
-                    unless issue
-                        puts "Error: No issue specified (and also not currently in an issue branch)."
-                        exit(1)
-                    end
+                    issue = current_issue_or_from_args(args)
+                    run_pager()
                     locate_issue(issue)
                 end
             end
@@ -455,7 +447,7 @@ class Ag
     def find_commits_for_issues()
         results = {}
         starting_points = Set.new()
-        @repo.branches.each do |branch|
+        @repo.branches.each(:local) do |branch|
             next if branch.name[-3, 3] == '_ag'
             while branch.target.class == Rugged::Reference
                 branch = branch.resolve
@@ -838,14 +830,15 @@ class Ag
         end
         
         ol = get_oneline(id)
-        heading = "#{'-' * ol.size}\n"
+        heading = "#{"\u2550" * ol.size}\n"
         heading += "#{ol}\n"
-        heading += "#{'-' * ol.size}\n"
+        heading += "#{"\u2550" * ol.size}\n"
         heading = heading.split("\n").map { |x| Paint[x, COLOR_ISSUE] }.join("\n")
         puts heading
         
+        commits = {}
         commits_in_branches = Set.new()
-        @repo.branches.each do |branch|
+        @repo.branches.each(:local) do |branch|
             next if branch.name[-3, 3] == '_ag'
             while branch.target.class == Rugged::Reference
                 branch = branch.resolve
@@ -855,23 +848,59 @@ class Ag
             walker.each do |commit|
                 message = commit.message
                 if message[0, 8] == "[#{id}]"
+                    commits[commit.oid] ||= {}
+                    commits[commit.oid][:commit] ||= commit
+                    commits[commit.oid][:branches] ||= Set.new()
+                    commits[commit.oid][:branches] << branch.name
                     commits_in_branches << branch.name
-                    break
+#                     break
                 end
             end
         end
-
+        
         if commits_in_branches.empty?
             puts "No commits found in any branches."
-        else
-            puts "Commits found in:"
-            commits_in_branches = commits_in_branches.to_a.sort do |a, b|
-                ta = (a.include?('/') ? a : ('/' + a)).split('/')
-                tb = (b.include?('/') ? b : ('/' + b)).split('/')
-                (ta[0] == tb[0]) ? (ta[1] <=> tb[1]) : (ta[0] <=> tb[0])
-            end
-            puts commits_in_branches.map { |x| '- ' + x }.join("\n")
+            return
         end
+        
+        commits_in_branches = commits_in_branches.to_a.sort
+        
+        table = Table.new()
+        3.times { table.add_header(nil) }
+        commits_in_branches.each { |x| table.add_header(x) }
+        
+        commits.keys.sort do |a, b|
+            commits[b][:commit].author[:time] <=> commits[a][:commit].author[:time]
+        end.each do |oid|
+            row = []
+            commit = commits[oid][:commit]
+            row << commit.oid[0, 8]
+            row << commit.author[:time].strftime('%a %b %d, %Y')
+            row << commit.author[:name]
+            commits_in_branches.each do |b|
+                row << (commits[oid][:branches].include?(b) ? "\u2022" : '')
+            end
+            table.add_row(row)
+        end
+        
+        table.render()
+
+#         (0...commits_in_branches.size).each do |_|
+#             b = commits_in_branches[commits_in_branches.size - 1 - _]
+#             puts ' ' * (44 + (commits_in_branches.size - _) * 4 - b.size) + b + "   \u2502" * (_)
+#         end
+#         puts "\u2500" * 46 + "\u2500\u253c\u2500\u252c" * commits_in_branches.size
+#         commits.keys.sort do |a, b|
+#             commits[b][:commit].author[:time] <=> commits[a][:commit].author[:time]
+#         end.each do |oid|
+#             commit = commits[oid][:commit]
+#             print "#{commit.oid[0, 8]} \u2502 #{commit.author[:time].strftime('%a %b %d, %Y')} \u2502 #{commit.author[:name]} \u2551"
+#             commits_in_branches.each do |b|
+#                 symbol = commits[oid][:branches].include?(b) ? "\u2022" : ' '
+#                 print " #{symbol} \u2502"
+#             end
+#             puts
+#         end
     end
     
     def edit_object(id)
