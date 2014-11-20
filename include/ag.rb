@@ -1300,6 +1300,7 @@ edit          Edit an issue
 connect       Connect an issue to a category
 disconnect    Disconnect an issue from a category
 start         Start working on an issue
+locate        Find commits and corresponding branches for an issue
 rm            Remove an issue
 attic         List removed issues
 
@@ -1308,7 +1309,6 @@ pull          Pull upstream changes
 push          Push changes upstream
 search        Search for categories or issues
 log           Show of a log of Ag activities
-locate        Find branches which have commits for an issue
 visualize     Launch a web browser and visualize commits
 help          Show usage information
 
@@ -1392,6 +1392,11 @@ The branch name starts with the issue ID followed by a dash, and through this
 pattern the git prepare-commit-message hook is able to know which issue all 
 commits made in this branch should be connected to.
 
+__locate
+Usage: ag locate [<issue>]
+Find commits and corresponding branches for an issue. If no issue is specified, show 
+the current issue as denoted by the branch name.
+
 __rm
 Usage: ag rm <issue>
 Remove an issue.
@@ -1416,9 +1421,5 @@ Search for categories or issues.
 __log:
 Usage: ag log
 Show of a log of Ag activities.
-
-__locate:
-Usage: ag locate <issue>
-Display all branches which have commits connected to an issue.
 END
 end
