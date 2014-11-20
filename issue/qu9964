@@ -1,0 +1,6 @@
+Summary: Provide a shortcut: ag commit [issue] when not in topic branch
+Categories: ab5933-feature
+
+$ ag commit provide[TAB] -a [...]
+--> This means you want to connect this commit to the specified issue
+--> If you're in a topic branch and you specify a differeny commit, ask the user!
