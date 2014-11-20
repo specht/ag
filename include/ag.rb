@@ -503,7 +503,7 @@ class Ag
         objects.to_a.each_with_index do |oid, _|
             id_for_oid[oid] = _ + 1
         end
-        include_dir = File::join(File::dirname($0), 'include')
+        include_dir = File::join(File::dirname(File::realpath($0)), 'include')
         include_dir = include_dir[0, include_dir.size - 1] if include_dir[-1] == '/'
         template = File::read(File::join(include_dir, 'vis-template.html'))
         template.gsub!('#{PATH_TO_AG_INCLUDE}', 'file://' + include_dir)
