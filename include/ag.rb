@@ -8,6 +8,7 @@ gem 'rugged', '=0.21.0'
 require 'rugged'
 require 'paint'
 require 'highline/import'
+require 'tempfile'
 
 require 'include/cli-dispatcher'
 require 'include/pager'
@@ -53,8 +54,9 @@ class Ag
                     end
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
-                 'connect', 'disconnect', 'start', 'rm', 'attic',
-                 'search', 'log', 'locate', 'pull', 'push'].each do |x|
+                 'connect', 'disconnect', 'start', 'rm', 'attic', 
+                 'search', 'log', 'locate', 'pull', 'push', 
+                 'visualize'].each do |x|
                     ac.option(x)
                 end
                 ac.handler { |args| run_pager(); show_help(args) }
@@ -214,6 +216,10 @@ class Ag
                 
             ac.option('push') do |ac|
                 ac.handler { |args| push() }
+            end
+                
+            ac.option('visualize') do |ac|
+                ac.handler { |args| visualize() }
             end
                 
         end
@@ -444,6 +450,94 @@ class Ag
         return object
     end
     
+    def wordwrap(as_String, ai_MaxLength = 70)
+        lk_RegExp = Regexp.new('.{1,' + ai_MaxLength.to_s + '}(?:\s|\Z)')
+        as_String.gsub(/\t/,"     ").gsub(lk_RegExp){($& + 5.chr).gsub(/\n\005/,"\n").gsub(/\005/,"\n")}
+    end
+    
+    def visualize()
+        starting_points = Set.new()
+        objects = Set.new()
+        parents_for_object = {}
+        children_for_object = {}
+        labels_for_object = {}
+        @repo.branches.each(:local) do |branch|
+            next if branch.name[-3, 3] == '_ag'
+            branch_name = branch.name
+            while branch.target.class == Rugged::Reference
+                branch = branch.resolve
+            end
+            starting_points << branch.target_id
+            objects << branch.target_id
+            labels_for_object[branch.target_id] ||= Set.new()
+            label = branch_name
+            if label =~ /^[a-z]{2}\d{4}\-/
+                tag = label[0, 6]
+                issue = load_issue(tag)
+                label = wordwrap("[#{tag}] #{issue[:summary]}", 30).gsub("\n", "\\n")
+            end
+            labels_for_object[branch.target_id] << label
+        end
+        walker = Rugged::Walker.new(@repo)
+        starting_points.each do |x|
+            walker.push(x)
+        end
+        walker.each do |commit|
+            objects << commit.oid
+            parents_for_object[commit.oid] = commit.parent_ids
+            children_for_object[commit.oid] ||= Set.new()
+            commit.parent_ids.each do |parent_id|
+                children_for_object[parent_id] ||= Set.new()
+                children_for_object[parent_id] << commit.oid
+            end
+            labels_for_object[commit.oid] ||= Set.new()
+        end
+        skip_commits = objects.select do |x|
+            parents_for_object[x].size == 1 && 
+            children_for_object[x].size == 1 &&
+            labels_for_object[x].empty?
+        end
+#         skip_commits = Set.new()
+        plot_commits = objects - skip_commits
+        id_for_oid = {}
+        objects.to_a.each_with_index do |oid, _|
+            id_for_oid[oid] = _ + 1
+        end
+        include_dir = File::join(File::dirname($0), 'include')
+        include_dir = include_dir[0, include_dir.size - 1] if include_dir[-1] == '/'
+        template = File::read(File::join(include_dir, 'vis-template.html'))
+        template.gsub!('#{PATH_TO_AG_INCLUDE}', 'file://' + include_dir)
+        data_str = ''
+        data_str += "var nodes = [\n"
+        plot_commits.each do |oid|
+            data_str += "    {id: #{id_for_oid[oid]}, label: '#{labels_for_object[oid].to_a.sort.join("\\n")}'},\n"
+        end
+        data_str += "];\n"
+        data_str += "var edges = [\n"
+        plot_commits.each do |oid|
+            parents_for_object[oid].each do |pid|
+                skip_count = 0
+                while skip_commits.include?(pid)
+                    pid = parents_for_object[pid].to_a.first
+                    skip_count += 1
+                end
+                label = (skip_count > 0) ? "(#{skip_count})" : ''
+                data_str += "    {from: #{id_for_oid[oid]}, to: #{id_for_oid[pid]}, label: \"#{label}\"},\n"
+            end
+        end
+        data_str += "];\n"
+        template.sub!('#{DATA}', data_str)
+        
+        file = Tempfile.new('ag_vis')
+        path = file.path + '.html'
+        file.close()
+        file.unlink
+        File::open(path, 'w') do |f|
+            f.write(template)
+        end
+        system("xdg-open \"#{path}\" 1> /dev/null 2> /dev/null")
+    end
+    
     def find_commits_for_issues()
         results = {}
         starting_points = Set.new()
@@ -452,9 +546,8 @@ class Ag
             while branch.target.class == Rugged::Reference
                 branch = branch.resolve
             end
-            starting_points << branch.resolve.target_id
+            starting_points << branch.target_id
         end
-        starting_points << @repo.head.target_id
         walker = Rugged::Walker.new(@repo)
         walker.push(@repo.head.target_id)
         walker.each do |commit|
@@ -1216,6 +1309,7 @@ push          Push changes upstream
 search        Search for categories or issues
 log           Show of a log of Ag activities
 locate        Find branches which have commits for an issue
+visualize     Launch a web browser and visualize commits
 help          Show usage information
 
 See 'ag help <command>' for more information on a specific command.
