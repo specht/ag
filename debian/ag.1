@@ -30,7 +30,7 @@ Here are some key points of Ag:
 cat new [<parent>] [<title>]
 Create a new category. Optionally, specify a parent category ID and/or the category title.
 .TP
-cat list     
+cat list
 Show all categories as a tree (ASCII art).
 .TP
 cat show <category>
@@ -55,17 +55,20 @@ Create a new issue. Optionally, categories can be specified which the issue
 should be connected to. It is possible to add and remove connections to categories
 at any time. You may specify the issue title on the command line.
 .TP
-list
-List all issues.
+list [<categories>]
+List all issues. Optionally, categories can be specified for filtering.
 .TP
-show <issue>
-Show raw issue information.
+show [<issue>]
+Show raw issue information. If no issue is specified, show the current issue as
+denoted by the branch name.
 .TP
-oneline <issue>
-Show condensed issue information in a single line.
+oneline [<issue>]
+Show condensed issue information in a single line. If no issue is specified, show 
+the current issue as denoted by the branch name.
 .TP
-edit <issue>
-Edit an issue.
+edit [<issue>]
+Edit an issue. If no issue is specified, show the current issue as
+denoted by the branch name.
 .TP
 connect <issue> <category> [<category> ...]
 Connect an issue to one or more categories.
@@ -81,6 +84,9 @@ commits made in this branch should be connected to.
 .TP
 rm <issue>
 Remove an issue.
+.TP
+attic [<categories>]
+List removed issues. Optionally, categories can be specified for filtering.
 .PP
 \fBMiscellaneous commands:\fP
 .PP
