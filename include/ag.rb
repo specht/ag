@@ -18,8 +18,8 @@ COLOR_RED = '#cc0000'
 COLOR_GREEN = '#4e9a06'
 COLOR_YELLOW = '#f9b935'
 
-COLOR_CATEGORY = COLOR_BLUE
-COLOR_ISSUE = COLOR_GREEN
+COLOR_CATEGORY = :blue
+COLOR_ISSUE = :green
 
 class Ag
     
@@ -53,7 +53,7 @@ class Ag
                     end
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
-                 'connect', 'disconnect', 'start', 'rm', 
+                 'connect', 'disconnect', 'start', 'rm', 'attic', 
                  'search', 'log', 'locate', 'pull', 'push', 
                  'visualize'].each do |x|
                     ac.option(x)
@@ -112,20 +112,25 @@ class Ag
                 ac.handler { |args| run_pager(); list_issues(args) }
             end
             
+            def current_issue_or_from_args(args)
+                issue = nil
+                if args.first
+                    issue = args.first
+                else
+                    issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
+                    issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
+                end
+                unless issue
+                    puts "Error: No issue specified (and also not currently in an issue branch)."
+                    exit(1)
+                end
+                return issue
+            end
+            
             ac.option('show') do |ac|
                 define_autocomplete_issues(ac)
                 ac.handler do |args|
-                    issue = nil
-                    if args.first
-                        issue = args.first
-                    else
-                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
-                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
-                    end
-                    unless issue
-                        puts "Error: No issue specified (and also not currently in an issue branch)."
-                        exit(1)
-                    end
+                    issue = current_issue_or_from_args(args)
                     run_pager()
                     show_object(issue)
                 end
@@ -133,23 +138,16 @@ class Ag
                 
             ac.option('oneline') do |ac|
                 define_autocomplete_issues(ac)
-                ac.handler { |args| oneline(args.first) }
+                ac.handler do |args| 
+                    issue = current_issue_or_from_args(args)
+                    oneline(issue)
+                end
             end
                 
             ac.option('edit') do |ac|
                 define_autocomplete_issues(ac)
                 ac.handler do |args|
-                    issue = nil
-                    if args.first
-                        issue = args.first
-                    else
-                        issue = `git rev-parse --abbrev-ref HEAD`.strip[0, 6]
-                        issue = nil unless issue =~ /^[a-z]{2}\d{4}$/
-                    end
-                    unless issue
-                        puts "Error: No issue specified (and also not currently in an issue branch)."
-                        exit(1)
-                    end
+                    issue = current_issue_or_from_args(args)
                     edit_object(issue)
                 end
             end
@@ -186,6 +184,11 @@ class Ag
                 ac.handler { |args| rm_issue(args.first) }
             end
                 
+            ac.option('attic', nil, true) do |ac, collected_parts|
+                define_autocomplete_categories(ac, false, false, Set.new(collected_parts[1, collected_parts.size - 1]))
+                ac.handler { |args| run_pager(); list_issues(args, :attic => true) }
+            end
+            
             # Miscellaneous commands
             
             ac.option('search') do |ac|
@@ -615,9 +618,20 @@ class Ag
             end
         end
     end
+    
+    def unicode_strike_through(s)
+        result = ''
+        s.each_char do |c|
+            result += c
+            result += "\u0336"
+        end
+        return result
+    end
 
-    def list_issues(args)
-
+    def list_issues(args, options = {})
+        
+        options[:attic] ||= false
+        
         check_if_ag_is_set_up()
         
         filter_cats = nil
@@ -628,10 +642,17 @@ class Ag
             end
         end
         commits_for_issues = find_commits_for_issues()
+        all_current_issue_ids = Set.new(all_issue_ids(false))
         all_issues = {}
-        all_issue_ids(false).each do |id|
+        all_issue_ids(options[:attic]).each do |id|
             issue = load_issue(id)
             all_issues[id] = issue
+        end
+        
+        if options[:attic]
+            all_current_issue_ids.each do |x|
+                all_issues.delete(x)
+            end
         end
         
         all_issues.keys.sort.each do |id|
@@ -649,7 +670,12 @@ class Ag
 #                     symbol = "\u26ab"
                 end
             end
-            line = Paint["[#{issue[:id]}] #{symbol} #{issue[:summary]}", COLOR_ISSUE]
+            line = "[#{issue[:id]}]"
+            unless all_current_issue_ids.include?(id)
+                line = unicode_strike_through(line)
+            end
+            line += " #{symbol} #{issue[:summary]}"
+            line = Paint[line, COLOR_ISSUE]
             cats = issue[:categories].map do |cat_id|
                 category = load_category(cat_id)
                 category[:id]
@@ -662,7 +688,7 @@ class Ag
             cats = cats.map do |cat_id|
                 category = load_category(cat_id)
                 category[:summary]
-            end
+            end.sort
             unless cats.empty?
                 line += Paint[" (#{cats.join(' / ')})", COLOR_CATEGORY]
             end
@@ -868,20 +894,31 @@ class Ag
         object, all_commits, deletion_commit = load_object(id, true)
         ol = get_oneline(id)
         color = (object[:type] == 'category') ? COLOR_CATEGORY : COLOR_ISSUE
-        heading = "#{'-' * ol.size}\n"
+        heading = "#{"\u2550" * ol.size}\n"
         heading += "#{ol}\n"
-        heading += "#{'-' * ol.size}\n"
+        heading += "#{"\u2550" * ol.size}\n"
         heading += "Created: #{all_commits.last.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.last.author[:name]}\n"
         if all_commits.size > 1
-            heading += "Last updated: #{all_commits.first.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.first.author[:name]}\n"
+            heading += "Updated: #{all_commits.first.author[:time].strftime('%a %b %d, %Y')} by #{all_commits.first.author[:name]}\n"
         end
         if deletion_commit
             heading += "Deleted: #{deletion_commit.author[:time].strftime('%a %b %d, %Y')} by #{deletion_commit.author[:name]}\n"
         end
-        heading += "#{'-' * ol.size}\n"
+        if object[:type] == 'issue'
+            cats = object[:categories].map do |cat_id|
+                category = load_category(cat_id)
+                category[:summary]
+            end.sort
+            heading += "Categories: #{cats.join(' / ')}\n"
+        end
+        heading += "#{"\u2500" * ol.size}\n"
         heading = heading.split("\n").map { |x| Paint[x, color] }.join("\n")
         puts heading
-        puts object_to_s(object)
+#         puts object.to_yaml
+#         puts object_to_s(object)
+        unless object[:description].empty?
+            puts object[:description]
+        end
         
     end
     
@@ -1235,6 +1272,7 @@ connect       Connect an issue to a category
 disconnect    Disconnect an issue from a category
 start         Start working on an issue
 rm            Remove an issue
+attic         List removed issues
 
 Miscellaneous commands:
 pull          Pull upstream changes
@@ -1290,21 +1328,24 @@ should be connected to. It is possible to add and remove connections to categori
 at any time. You may specify the issue title on the command line.
 
 __list
-Usage: ag list
+Usage: ag list [<categories>]
 
-List all issues.
+List all issues. Optionally, categories can be specified for filtering.
 
 __show
-Usage: ag show <issue>
-Show raw issue information.
+Usage: ag show [<issue>]
+Show raw issue information. If no issue is specified, show the current issue as
+denoted by the branch name.
 
 __oneline
-Usage: ag oneline <issue>
-Show condensed issue information in a single line.
+Usage: ag oneline [<issue>]
+Show condensed issue information in a single line. If no issue is specified, show 
+the current issue as denoted by the branch name.
 
 __edit
-Usage: ag edit <issue>
-Edit an issue.
+Usage: ag edit [<issue>]
+Edit an issue. If no issue is specified, show the current issue as denoted by 
+the branch name.
 
 __connect
 Usage: ag connect <issue> <category> [<category> ...]
@@ -1325,6 +1366,11 @@ commits made in this branch should be connected to.
 __rm
 Usage: ag rm <issue>
 Remove an issue.
+
+__attic
+Usage: ag attic [<categories>]
+
+List removed issues. Optionally, categories can be specified for filtering.
 
 __pull
 Usage: ag pull
