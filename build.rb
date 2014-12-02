@@ -12,10 +12,16 @@ system("cd _build/src && tar xvzf ag_#{tag}.tar.gz")
 File::open('_build/src/debian/changelog', 'w') do |f|
     f.puts "ag (#{tag}) precise; urgency=low"
     f.puts
-    f.puts "  * Initial release"
+    f.puts "  * Update"
     f.puts
-    f.puts " -- Michael Specht <micha.specht@gmail.com>  Thu,  31 Jul 2014 16:00:00 +0200"
+    f.puts " -- Michael Specht <micha.specht@gmail.com>  #{Time.now.strftime('%a,  %d %b %Y %T %z')}"
     f.puts
+end
+
+manpage = File::read('_build/src/debian/ag.1')
+manpage.gsub!('#{DATE}', Time.now.strftime('%B %d, %Y'))
+File::open('_build/src/debian/ag.1', 'w') do |f|
+    f.write(manpage)
 end
 
 system("cd _build/src && debuild -S")
