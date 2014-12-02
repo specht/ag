@@ -1120,6 +1120,12 @@ class Ag
         response = ask("Are you sure you want to remove this issue [y/N]? ")
         if response.downcase == 'y'
             commit_object(id, nil, "Removed issue: #{issue[:slug]}", true)
+            
+            existing_branches = @repo.branches.select { |b| b.name[0, id.size + 1] == id + '-' }
+            unless existing_branches.empty?
+                puts "While you're at it, you might want to remove the corresponding topic branch#{existing_branches.size == 1 ? '' : 'es'}:"
+                puts "  git branch -d #{existing_branches.map { |x| x.name }.join(' ')}"
+            end
         else
             puts "Leaving issue #{issue[:slug]} unchanged."
         end
