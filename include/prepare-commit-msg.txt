@@ -3,10 +3,12 @@
 template = File::read(ARGV.first)
 current_branch = `git rev-parse --abbrev-ref HEAD`.strip
 
-if current_branch =~ /^[a-z]{2}\d{4}\-/
-    template = `ag oneline #{current_branch[0, 6]}`.strip + "\n" + template
-else
-    template = "# Ag: Unable to determine what you're currently working on.\n" + template
+unless template.include?('Merge branch ') && template.include?(' into ')
+    if current_branch =~ /^[a-z]{2}\d{4}\-/
+        template = `ag oneline #{current_branch[0, 6]}`.strip + "\n" + template
+    else
+        template = "# Ag: Unable to determine what you're currently working on.\n" + template
+    end
 end
 
 File::open(ARGV.first, 'w') do |f|
