@@ -1,3 +1,9 @@
 Summary: Provide a way to list current and removed issues, and restore removed issues
 Categories: ab5933-feature
 
+Remove 'ag attic' and replace it with:
+ag list --all
+ag list --removed
+
+Also add:
+ag restore [removed issue]
