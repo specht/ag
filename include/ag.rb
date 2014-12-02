@@ -55,7 +55,7 @@ class Ag
                     end
                 end
                 ['new', 'list', 'show', 'oneline', 'edit',
-                 'connect', 'disconnect', 'start', 'rm', 'attic', 
+                 'connect', 'disconnect', 'start', 'rm', 'restore',
                  'search', 'log', 'locate', 'pull', 'push', 
                  'visualize'].each do |x|
                     ac.option(x)
@@ -188,6 +188,12 @@ class Ag
                 ac.handler { |args| rm_issue(args.first) }
             end
                 
+            ac.option('restore') do |ac|
+                current_issue_ids = all_issue_ids(false)
+                define_autocomplete_issues(ac, true, false, Set.new(current_issue_ids))
+                ac.handler { |args| restore_issue(args.first) }
+            end
+                
             # Miscellaneous commands
             
             ac.option('search') do |ac|
@@ -223,9 +229,9 @@ class Ag
         puts "Unknown command: #{ARGV.first}. Try 'ag help' for a list of possible commands."
     end
 
-    # auto-completion helper: define categories with slugs and slug parts
-    # If recursive == false, only define current categories
-    # If recursive == true, also walk back in history and define removed categories
+    # auto-completion helper: define categories and issues with slugs and slug parts
+    # If recursive == false, only define current objects
+    # If recursive == true, also walk back in history and define removed objects
     # Use include to specify IDs to use (instead of using all_ids)
     # Use exclude to specify completions that should be excluded
     def define_autocomplete_object(type, ac, recursive = false, inception = false, exclude = Set.new(), include = nil, &block)
@@ -1119,6 +1125,25 @@ class Ag
         end
     end
     
+    def restore_issue(id)
+        id = id[0, 6]
+        issue = load_issue(id)
+        
+        puts "Restoring issue: #{get_oneline(id)}"
+        
+        if all_issue_ids(false).include?(id)
+            puts "Error: Issue is active and has not been removed."
+            exit(1)
+        end
+    
+        response = ask("Are you sure you want to remove this issue [y/N]? ")
+        if response.downcase == 'y'
+            commit_object(id, issue, "Restored issue: #{issue[:slug]}", false)
+        else
+            puts "Leaving issue #{issue[:slug]} unchanged."
+        end
+    end
+    
     def start_working_on_issue(id)
         id = id[0, 6]
         issue = load_issue(id)
@@ -1286,7 +1311,7 @@ cat rm        Remove a category
 
 Available issue-related commands:
 new           Create a new issue
-list          List all issues
+list          List issues
 show          Show raw issue information
 oneline       Show condensed issue information in a single line
 edit          Edit an issue
@@ -1295,7 +1320,7 @@ disconnect    Disconnect an issue from a category
 start         Start working on an issue
 locate        Find commits and corresponding branches for an issue
 rm            Remove an issue
-attic         List removed issues
+restore       Restore a previously removed issue
 
 Miscellaneous commands:
 pull          Pull upstream changes
@@ -1350,9 +1375,11 @@ should be connected to. It is possible to add and remove connections to categori
 at any time. You may specify the issue title on the command line.
 
 __list
-Usage: ag list [<categories>]
+Usage: ag list [--removed] [--all] [<categories>]
 
-List all issues. Optionally, categories can be specified for filtering.
+List issues. Optionally, categories can be specified for filtering.
+By default, this lists current issues only. Specify --removed to list removed issues
+only or --all to list current and removed issues.
 
 __show
 Usage: ag show [<issue>]
@@ -1394,10 +1421,9 @@ __rm
 Usage: ag rm <issue>
 Remove an issue.
 
-__attic
-Usage: ag attic [<categories>]
-
-List removed issues. Optionally, categories can be specified for filtering.
+__restore
+Usage: ag restore <issue>
+Restore a previously removed issue.
 
 __pull
 Usage: ag pull
