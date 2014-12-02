@@ -9,6 +9,7 @@ require 'rugged'
 require 'paint'
 require 'highline/import'
 require 'tempfile'
+require 'json'
 
 require 'include/cli-dispatcher'
 require 'include/pager'
@@ -109,6 +110,8 @@ class Ag
             end
             
             ac.option('list', nil, true) do |ac, collected_parts|
+                ac.option('--all')
+                ac.option('--removed')
                 define_autocomplete_categories(ac, false, false, Set.new(collected_parts[1, collected_parts.size - 1]))
                 ac.handler { |args| run_pager(); list_issues(args) }
             end
@@ -185,11 +188,6 @@ class Ag
                 ac.handler { |args| rm_issue(args.first) }
             end
                 
-            ac.option('attic', nil, true) do |ac, collected_parts|
-                define_autocomplete_categories(ac, false, false, Set.new(collected_parts[1, collected_parts.size - 1]))
-                ac.handler { |args| run_pager(); list_issues(args, :attic => true) }
-            end
-            
             # Miscellaneous commands
             
             ac.option('search') do |ac|
@@ -217,11 +215,10 @@ class Ag
             ac.option('push') do |ac|
                 ac.handler { |args| push() }
             end
-                
+
             ac.option('visualize') do |ac|
                 ac.handler { |args| visualize() }
             end
-                
         end
         puts "Unknown command: #{ARGV.first}. Try 'ag help' for a list of possible commands."
     end
@@ -622,7 +619,18 @@ class Ag
 
     def list_issues(args, options = {})
         
-        options[:attic] ||= false
+        options[:show_current] ||= true
+        options[:show_removed] ||= false
+        if args.include?('--removed')
+            args.delete('--removed')
+            options[:show_current] = false
+            options[:show_removed] = true
+        end
+        if args.include?('--all')
+            args.delete('--all')
+            options[:show_current] = true
+            options[:show_removed] = true
+        end
         
         check_if_ag_is_set_up()
         
@@ -636,12 +644,12 @@ class Ag
         commits_for_issues = find_commits_for_issues()
         all_current_issue_ids = Set.new(all_issue_ids(false))
         all_issues = {}
-        all_issue_ids(options[:attic]).each do |id|
+        all_issue_ids(options[:show_removed]).each do |id|
             issue = load_issue(id)
             all_issues[id] = issue
         end
         
-        if options[:attic]
+        unless options[:show_current]
             all_current_issue_ids.each do |x|
                 all_issues.delete(x)
             end
@@ -1140,79 +1148,64 @@ class Ag
         end
     end
 
-=begin    
-    def web()
-        root = File::join(File.expand_path(File.dirname(__FILE__)), 'web')
-        server = WEBrick::HTTPServer.new(:Port => 19816, :DocumentRoot => root)
-        
-        trap('INT') do 
-            server.shutdown()
-        end
-        
-        server.mount_proc('/update-parent') do |req, res|
-            parts = req.unparsed_uri.split('/')
-            id = parts[2]
-            parent_id = parts[3]
-            issue = load_issue(id)
-            begin
-                parent = load_issue(parent_id)
-            rescue
-                parent_id = nil
-            end
-            issue[:parent] = parent_id
-            commit_issue(id, issue, 'Changed parent of issue')
-        end
-        
-        server.mount_proc('/read-issue') do |req, res|
-            parts = req.unparsed_uri.split('/')
-            id = parts[2]
-            issue = load_issue(id)
-            res.body = issue.to_json()
-        end
-        
-        server.mount_proc('/ag.json') do |req, res|
-            all_issues = {}
-            ids_by_parent = {}
-            all_ids(false).sort.each do |id|
-                issue = load_issue(id)
-                all_issues[id] = issue
-                ids_by_parent[issue[:parent]] ||= []
-                ids_by_parent[issue[:parent]] << id
-            end
-            
-            def walk_tree(parent, all_issues, ids_by_parent)
-                return unless ids_by_parent[parent]
-                items = []
-                count = ids_by_parent[parent].size
-                ids_by_parent[parent].sort do |a, b|
-                    issue_a = all_issues[a]
-                    issue_b = all_issues[b]
-                    issue_a[:summary].downcase <=> issue_b[:summary].downcase
-                end.each_with_index do |id, index|
-                    issue = all_issues[id]
-                    items << {'id' => id, 'summary' => issue[:summary]}
-                    if ids_by_parent.include?(id)
-                        items.last['children'] = walk_tree(id, all_issues, ids_by_parent)
-                    end
-                end
-                return items
-            end
-            
-            items = walk_tree(nil, all_issues, ids_by_parent)
-            res.body = items.to_json()
-        end        
-
-        puts
-        puts "Please go to >>> http://localhost:19816 <<< to interact with the issue tracker."
-        puts
-        
-        fork do
-            system("google-chrome http://localhost:19816")
-        end
-        
-        server.start
-    end
-=end    
+#     def web()
+#         root = File::join(File.expand_path(File.dirname(__FILE__)), 'web')
+#         puts root
+#         server = WEBrick::HTTPServer.new(:Port => 19816, :DocumentRoot => root)
+#         
+#         trap('INT') do 
+#             server.shutdown()
+#         end
+#         
+#         server.mount_proc('/read-issue') do |req, res|
+#             parts = req.unparsed_uri.split('/')
+#             id = parts[2]
+#             issue = load_issue(id)
+#             res.body = issue.to_json()
+#         end
+#         
+#         server.mount_proc('/ag.json') do |req, res|
+#             all_issues = {}
+#             ids_by_parent = {}
+#             all_ids(false, 'issue').sort.each do |id|
+#                 issue = load_issue(id)
+#                 all_issues[id] = issue
+#                 ids_by_parent[issue[:parent]] ||= []
+#                 ids_by_parent[issue[:parent]] << id
+#             end
+#             
+#             def walk_tree(parent, all_issues, ids_by_parent)
+#                 return unless ids_by_parent[parent]
+#                 items = []
+#                 count = ids_by_parent[parent].size
+#                 ids_by_parent[parent].sort do |a, b|
+#                     issue_a = all_issues[a]
+#                     issue_b = all_issues[b]
+#                     issue_a[:summary].downcase <=> issue_b[:summary].downcase
+#                 end.each_with_index do |id, index|
+#                     issue = all_issues[id]
+#                     items << {'id' => id, 'summary' => issue[:summary]}
+#                     if ids_by_parent.include?(id)
+#                         items.last['children'] = walk_tree(id, all_issues, ids_by_parent)
+#                     end
+#                 end
+#                 return items
+#             end
+#             
+#             items = walk_tree(nil, all_issues, ids_by_parent)
+#             res.body = items.to_json()
+#         end        
+# 
+#         puts
+#         puts "Please go to >>> http://localhost:19816 <<< to interact with the issue tracker."
+#         puts
+#         
+# #         fork do
+# #             system("xdg-open http://localhost:19816")
+# #         end
+#         
+#         server.start
+#     end
     
     def log()
         ag_branch = @repo.branches['_ag']

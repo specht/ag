@@ -2,7 +2,29 @@
 <head>
 <title>Ag Commit Graph</title>
 <script src="#{PATH_TO_AG_INCLUDE}/visjs/vis.min.js"></script>
+<script src="#{PATH_TO_AG_INCLUDE}/jquery/jquery-2.1.1.min.js"></script>
 <link href="#{PATH_TO_AG_INCLUDE}/visjs/vis.min.css" rel="stylesheet" type="text/css" />
+
+<style type='text/css'>
+#pane {
+    font-family: sans;
+    font-size: 10pt;
+    padding: 1em;
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    border: 1px solid #888;
+    border-radius: 1em;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: none;
+}
+
+pre {
+    line-height: 100%;
+    margin: 0;
+}
+
+</style>
 </head>
 
 <body>
@@ -14,10 +36,12 @@
 
 var container = document.getElementById('commit_graph');
 
-var data= {
-    nodes: nodes,
-    edges: edges,
+var data = {
+    nodes: new vis.DataSet(nodes),
+    edges: new vis.DataSet(edges),
 };
+
+// data = new vis.DataSet(data);
 
 var options = {
     width: '100%',
@@ -38,13 +62,38 @@ var options = {
     keyboard: true
 };
 
+function on_click(properties)
+{
+    if (properties.nodes.length == 1)
+    {
+        var s = ""
+        s += node_data[properties.nodes[0]][0].substr(0, 7) + " - ";
+        s += node_data[properties.nodes[0]][2]['name'] + " on ";
+        s += node_data[properties.nodes[0]][2]['time'] + "<hr />";
+        s += node_data[properties.nodes[0]][1];
+        $('#pane').html("<pre>" + s + "</pre>");
+        $('#pane').show();
+    }
+    else if (properties.nodes.length == 0)
+    {
+        $('#pane').hide();
+    }
+    else
+    {
+        $('#pane').html("<em>(multiple nodes selected)</em>");
+        $('#pane').show();
+    }
+}
+
 var graph = new vis.Network(container, data, options);
 
-graph.on('select', function (properties) {
-  console.log('selected nodes: ' + properties.nodes);
-});
+graph.on('click', on_click);
 
 </script>
+
+<div id='pane'>
+No information.
+</div>
 
 </body>
 </html>
