@@ -1,0 +1,6 @@
+Summary: Dependent issues
+Categories: ab5933-feature
+
+If I have a bug and I temporarily disable some functionality, maybe it makes sense to somehow
+link these issues so that when the bug is resolved, I get a reminder to undo the disabling
+step.
