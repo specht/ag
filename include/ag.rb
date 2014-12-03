@@ -1165,14 +1165,19 @@ class Ag
     end
     
     def search(keywords)
+        all_current_ids = Set.new(all_ids(false))
         all_ids(true).each do |id|
             object = load_object(id)
             found_something = false
             keywords.each do |keyword|
                 if object[:original].downcase.include?(keyword.downcase)
-                    s = get_oneline(id)
-                    s = Paint[s, COLOR_CATEGORY] if object[:type] == 'category'
-                    s = Paint[s, COLOR_ISSUE] if object[:type] == 'issue'
+                    line = "[#{object[:id]}]"
+                    unless all_current_ids.include?(id)
+                        line = unicode_strike_through(line)
+                    end
+                    line += " #{object[:summary]}"
+                    s = Paint[line, COLOR_CATEGORY] if object[:type] == 'category'
+                    s = Paint[line, COLOR_ISSUE] if object[:type] == 'issue'
                     puts s
                 end
             end
