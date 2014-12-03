@@ -1,0 +1,4 @@
+Summary: Make sure prepare-commit-msg hook is up-to-date
+Categories: xv7035-bug
+
+It won't be updated if it's already there but outdated.
