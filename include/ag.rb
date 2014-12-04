@@ -268,9 +268,11 @@ class Ag
     
     def ensure_git_hook_present()
         hook_path = File::join(@repo.path, 'hooks', 'prepare-commit-msg')
-        unless File::exists?(hook_path)
+        hook_source_path = File::join(File.expand_path(File.dirname(__FILE__)), 'prepare-commit-msg.txt')
+        unless FileUtils::uptodate?(hook_path, [hook_source_path])
+            puts "Updating prepare-commit-msg hook..."
             File::open(hook_path, 'w') do |f|
-                f.write(File::read(File::join(File.expand_path(File.dirname(__FILE__)), 'prepare-commit-msg.txt')))
+                f.write(File::read(hook_source_path))
             end
             File::chmod(0755, hook_path)
         end
