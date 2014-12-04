@@ -1,14 +1,14 @@
+gem 'rugged', '=0.21.0'
 require 'date'
+require 'highline/import'
+require 'json'
 require 'open3'
+require 'paint'
+require 'rugged'
 require 'set'
 require 'tempfile'
 require 'webrick'
 require 'yaml'
-gem 'rugged', '=0.21.0'
-require 'rugged'
-require 'paint'
-require 'highline/import'
-require 'tempfile'
 
 require 'include/cli-dispatcher'
 require 'include/pager'
@@ -20,6 +20,49 @@ COLOR_YELLOW = '#f9b935'
 
 COLOR_CATEGORY = :blue
 COLOR_ISSUE = :green
+
+CLING_COLORS = [
+    ['#ffe617', 'daffodil'],
+    ['#fad31c', 'daisy'],
+    ['#fdb717', 'mustard'],
+    ['#faaa21', 'circus zest'],
+    ['#f1753f', 'pumpkin'],
+    ['#ed5724', 'tangerine'],
+    ['#ef4538', 'salmon'],
+    ['#ea2830', 'persimmon'],
+    ['#bc2326', 'rouge'],
+    ['#8c0c03', 'scarlet'],
+    ['#e5185d', 'hot pink'],
+
+    ['#f384ae', 'princess'],
+    ['#fac6d2', 'petal'],
+    ['#b296c7', 'lilac'],
+    ['#7b67ae', 'lavender'],
+    ['#5f3577', 'violet'],
+    
+    ['#c1d18a', 'ceadon'],
+    ['#799155', 'olive'],
+    ['#80bc42', 'bamboo'],
+    ['#4aa03f', 'grass'],
+    ['#16884a', 'kelly'],
+    ['#003f2e', 'forrest'],
+
+    ['#c3def1', 'cloud'],
+    ['#55beed', 'dream'],
+    ['#31a8e0', 'gulf'],
+    ['#238acc', 'turquoise'],
+    ['#0d60ae', 'sky'],
+    ['#143b86', 'indigo'],
+    ['#001b4a', 'navy'],
+    ['#7dcdc2', 'sea foam'],
+    ['#00a8a8', 'teal'],
+    ['#12959f', 'peacock'],
+    
+    ['#381e11', 'chocolate'],
+    ['#c05c20', 'terra cotta'],
+    ['#bf9b6b', 'camel'],
+    ['#e9d4a7', 'linen'],
+]
 
 class Ag
     
@@ -463,8 +506,39 @@ class Ag
         as_String.gsub(/\t/,"     ").gsub(lk_RegExp){($& + 5.chr).gsub(/\n\005/,"\n").gsub(/\005/,"\n")}
     end
     
+    def string_count_in_file(tree, path, search_string)
+        path_list = path.split('/')
+        tree.each do |x|
+            if x[:name] == path_list.first
+                if x[:type] == :tree
+                    if path_list.size > 1
+                        return string_count_in_file(@repo.lookup(x[:oid]), path_list[1, path_list.size - 1].join('/'), search_string)
+                    end
+                elsif x[:type] == :blob
+                    if path_list.size == 1
+                        blob = @repo.lookup(x[:oid])
+                        count = 0
+                        index = 0
+                        while true do
+                            if blob.content.index(search_string, index)
+                                index = blob.content.index(search_string, index) + 1
+                                count += 1
+                            else
+                                break
+                            end
+                        end
+                        return count
+                    end
+                end
+            end
+        end
+        return nil
+    end
+    
     def visualize()
+        node_data = {}
         starting_points = Set.new()
+        commits = {}
         objects = Set.new()
         parents_for_object = {}
         children_for_object = {}
@@ -490,7 +564,18 @@ class Ag
         starting_points.each do |x|
             walker.push(x)
         end
+        color_for_issue_id = {}
+        color_for_object = {}
         walker.each do |commit|
+            message = commit.message
+            if message =~ /^\[[a-z]{2}\d{4}\]/
+                issue_id = message[1, 6]
+                unless color_for_issue_id.include?(issue_id)
+                    color_for_issue_id[issue_id] = CLING_COLORS.sample.first
+                end
+                color_for_object[commit.oid] = color_for_issue_id[issue_id]
+            end
+            commits[commit.oid] = commit
             objects << commit.oid
             parents_for_object[commit.oid] = commit.parent_ids
             children_for_object[commit.oid] ||= Set.new()
@@ -499,41 +584,73 @@ class Ag
                 children_for_object[parent_id] << commit.oid
             end
             labels_for_object[commit.oid] ||= Set.new()
+            path = 'src/main/htdocs/js/jquery-ribolution-0.0.1.js'
+            search_string = 'assertEntityWithBarcodeDoesNotExist'
+            count = string_count_in_file(commit.tree, path, search_string)
+            if count && count > 0
+                labels_for_object[commit.oid] << 'FOUND IT'
+            end
         end
+        skip_commits = Set.new()
+        # skip long stretches on single commits
+#         skip_commits = objects.select do |x|
+#             parents_for_object[x].size == 1 && 
+#             children_for_object[x].size == 1 &&
+#             labels_for_object[x].empty?
+#         end
+#         skip all commits older than some time
         skip_commits = objects.select do |x|
-            parents_for_object[x].size == 1 && 
-            children_for_object[x].size == 1 &&
-            labels_for_object[x].empty?
+            (Time.now - commits[x].author[:time]).to_i > 3600 * 24 * 100
         end
-#         skip_commits = Set.new()
         plot_commits = objects - skip_commits
         id_for_oid = {}
         objects.to_a.each_with_index do |oid, _|
             id_for_oid[oid] = _ + 1
         end
-        include_dir = File::join(File::dirname($0), 'include')
+        include_dir = File::join(File::dirname(File::realpath($0)), 'include')
         include_dir = include_dir[0, include_dir.size - 1] if include_dir[-1] == '/'
         template = File::read(File::join(include_dir, 'vis-template.html'))
         template.gsub!('#{PATH_TO_AG_INCLUDE}', 'file://' + include_dir)
+        
+#         @repo.references.each do |ref|
+#             next if ref.name.index('refs/remotes') == 0
+#             ref.log.reverse.each_with_index do |reflog, _|
+#                 if id_for_oid.include?(reflog[:id_old])
+#                     labels_for_object[reflog[:id_old]] << ref.name.sub('refs/heads/', '') + "-#{_+1}"
+#                 end
+#             end
+#         end
+
         data_str = ''
         data_str += "var nodes = [\n"
         plot_commits.each do |oid|
-            data_str += "    {id: #{id_for_oid[oid]}, label: '#{labels_for_object[oid].to_a.sort.join("\\n")}'},\n"
+            color = color_for_object[oid]
+            color ||= '#aaaaaa'
+            if parents_for_object[oid].size > 1
+                color = '#f8f8f8'
+            end
+            data_str += "    {id: #{id_for_oid[oid]}, label: '#{labels_for_object[oid].to_a.sort.join("\\n")}', color: \"#{color}\"},\n"
+            node_data[id_for_oid[oid]] = [oid, commits[oid].message, commits[oid].author]
         end
         data_str += "];\n"
         data_str += "var edges = [\n"
         plot_commits.each do |oid|
             parents_for_object[oid].each do |pid|
                 skip_count = 0
-                while skip_commits.include?(pid)
-                    pid = parents_for_object[pid].to_a.first
-                    skip_count += 1
-                end
+#                 while skip_commits.include?(pid)
+#                     pid = parents_for_object[pid].to_a.first
+#                     skip_count += 1
+#                 end
                 label = (skip_count > 0) ? "(#{skip_count})" : ''
-                data_str += "    {from: #{id_for_oid[oid]}, to: #{id_for_oid[pid]}, label: \"#{label}\"},\n"
+                color = ''
+#                 if parents_for_object[oid].size > 1
+#                     color = ", color: \"#d0d0d0\""
+#                 end
+                data_str += "    {from: #{id_for_oid[oid]}, to: #{id_for_oid[pid]}, label: \"#{label}\"#{color}},\n"
             end
         end
         data_str += "];\n"
+        data_str += "var node_data = #{node_data.to_json};"
         template.sub!('#{DATA}', data_str)
         
         file = Tempfile.new('ag_vis')
