@@ -1,0 +1,5 @@
+Summary: Provide support for attachments
+Categories: ab5933-feature
+
+Files can be attached to an issue. Attachments may be stored in attachments/[issue id]/[file name].
+Add, show, remove attachments. :)
