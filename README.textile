@@ -41,30 +41,35 @@ bc. $ ag new
 Ag will launch a text editor with a file which says:
 
 bc. Summary:
+Priority: 5
 
 Enter the issue's summary and enter some more details if you like:
 
 bc.. Summary: Colors are all wrong
+Priority: 5
 
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
 
-p. Save the file and exit the editor. Ag will respond with:
+p. If you like, adjust the priority: 0 for lowest, 9 for highest. Save the file and exit the editor. Ag will respond with:
 
 bc. Added issue: tz9540-colors-are-all-wrong
 
 The small bit in front is the issue ID. You can use it to specify the issue (although it should be something different for you).
 
 bc. $ ag list 
-[tz9540]   Colors are all wrong
+[tz9540]+5   Colors are all wrong
 
-Yes, the issue is still there! Let's look at the issue in detail:
+Yes, the issue is still there! The @+5@ bit reports the priority of the issue, and if there were more issues, they would
+be sorted by that value. Let's look at the issue in detail:
 
 bc.. $ ag show tz9540
------------------------------
-[tz9540] Colors are all wrong
------------------------------
-Summary: Colors are all wrong
-
+═══════════════════════════════
+[tz9540]+5 Colors are all wrong
+═══════════════════════════════
+Created: Wed Nov 19, 2014 by Michael Specht
+Updated: Wed Nov 19, 2014 by Michael Specht
+Priority: 5
+───────────────────────────────
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
 
 h3. Where does Ag store its data?
@@ -88,6 +93,7 @@ tz9540
 
 $ cat issue/tz9540
 Summary: Colors are all wrong
+Priority: 5
 
 When you try to set the foreground color to red, it becomes yellow. How's that even possible?
 
@@ -121,6 +127,7 @@ Let's add another issue:
 bc. $ ag new
 
 bc.. Summary: Implement XML export 
+Priority: 5
 
 We need some way to export everything to XML because you know, ENTERPRISE!
 
@@ -163,8 +170,8 @@ h3. Connect issues to categories
 Now we can connect issues to categories:
 
 bc. $ ag list
-[br9077]   Implement XML export
-[tz9540]   Colors are all wrong
+[br9077]+5   Implement XML export
+[tz9540]+5   Colors are all wrong
 
 'Implement XML export' is a feature, so let's record that:
 
@@ -183,8 +190,8 @@ bc. Connected issue br9077-implement-xml-export to 1 category
 Now the issues are connected to the categories:
 
 bc. $ ag list
-[br9077]   Implement XML export (Feature)
-[tz9540]   Colors are all wrong (Bug)
+[br9077]+5   Implement XML export (Feature)
+[tz9540]+5   Colors are all wrong (Bug)
 
 Want to see which bugs are there?
 
@@ -193,7 +200,7 @@ bc. $ ag list bug[TAB]
 
 This gives you all issues which are connected to the 'Bug' category:
 
-bc. [tz9540]   Colors are all wrong (Bug)
+bc. [tz9540]+5   Colors are all wrong (Bug)
 
 As you've seen, categories are arranged in a tree (each category item has a parent, which can be null). Categories are expected to be pretty stable during a project. Issues can be connected to zero, one, or more categories and they're not directly related to each other, they may only share common categories.
 
@@ -212,7 +219,7 @@ bc. git commit
 
 And the commit message is already there:
 
-bc.. [tz9540] Colors are all wrong
+bc.. [tz9540]+5 Colors are all wrong
 
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
@@ -226,17 +233,17 @@ bc.. [tz9540] Colors are all wrong
 p. The issue is referenced from the commit via @[tz9540]@. How does Ag know we're working on that bug? It's not being explicitly recorded anywhere. Ag looks at the branch name. If it starts with two letters and four digits, followed by a dash, it must be an issue! Now let's have a look at the issues again:
 
 bc. $ ag list 
-[br9077]   Implement XML export (Feature)
-[tz9540] * Colors are all wrong (Bug)
+[br9077]+5 ⇢ Implement XML export (Feature)
+[tz9540]+5 ⇒ Colors are all wrong (Bug)
 
-The asterisk (*) means that there has already work been done for this issue, that is, there is at least one commit which references the issue. A plus (+) indicates that commits have been made for an issue but in a different branch.
+The arrows indicate that there has already work been done for this issue, that is, there is at least one commit which references the issue. A plus (+) indicates that commits have been made for an issue. The double arrow (⇒) indicates that there are commits reachable from your current branch, and the dashed arrow (⇢) indicates that there are commits in other branches.
 
 h3. Resolving issues
 
 Now that we have fixed the color bug, we can resolve the issue. Because this is all happening in Git, let's remove that bug (we'll still be able to walk back in history to dig out the bug and see when it was filed, when commits have been made, and when it was removed):
 
 bc. $ ag rm col[TAB]
-Removing issue: [tz9540] Colors are all wrong
+Removing issue: [tz9540]+5 Colors are all wrong
 Are you sure you want to remove this issue [y/N]? 
 
 Type 'y' and the issue won't show up in listings or tab completions anymore. Don't worry though, it's not gone at all. You can still say @ag start tz9540@ and you'll be given a topic branch and when you commit, you still get the automatically prepared commit message. We know it was around in the past, but we don't want to see it anymore because we're done with it.
@@ -272,11 +279,16 @@ edit          Edit an issue
 connect       Connect an issue to a category
 disconnect    Disconnect an issue from a category
 start         Start working on an issue
+locate        Find commits and corresponding branches for an issue
 rm            Remove an issue
+restore       Restore a previously removed issue
 
 Miscellaneous commands:
+pull          Pull upstream changes
+push          Push changes upstream
 search        Search for categories or issues
 log           Show of a log of Ag activities
+visualize     Launch a web browser and visualize commits
 help          Show usage information
 
 See 'ag help <command>' for more information on a specific command.
@@ -290,4 +302,3 @@ h2. To do
 * search results should be more clear (right now, you find removed issues but you can't tell 
   from the search results that they have been deleted)
 * web interface and reporting (oh, the possibilities!)
-* Agile?
