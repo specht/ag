@@ -1,0 +1,4 @@
+Summary: Add priority value
+Categories: ab5933-feature
+
+Add priority value for issues, ranging from 0 (lowest) to 9 (highest)
