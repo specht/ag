@@ -1,4 +1,4 @@
-gem 'rugged', '=0.21.0'
+gem 'rugged', '>=0.21.0'
 require 'date'
 require 'highline/import'
 require 'json'
@@ -423,6 +423,15 @@ class Ag
             end
             lines.delete_at(0)
         end
+
+        priority = 5
+        if !lines.empty? && lines[0].index('Priority:') == 0
+            temp = lines[0].sub('Priority:', '').strip
+            if temp =~ /^\d$/
+                priority = temp.to_i
+            end
+            lines.delete_at(0)
+        end
         
         description = lines.join("\n")
         description.strip!
@@ -432,7 +441,8 @@ class Ag
         
         return {:id => id, :original => original, :parent => parent,
                 :categories => categories, :summary => summary, 
-                :description => description, :slug => slug, :slug_pieces => summary_pieces}
+                :priority => priority, :description => description,
+                :slug => slug, :slug_pieces => summary_pieces}
     end
 
     def load_object(id, with_history = false)
@@ -772,7 +782,11 @@ class Ag
             end
         end
         
-        all_issues.keys.sort.each do |id|
+        all_issues.keys.sort do |a, b|
+            (all_issues[a][:priority] == all_issues[b][:priority]) ?
+                (a <=> b) :
+                (all_issues[b][:priority] <=> all_issues[a][:priority])
+        end.each do |id|
             issue = all_issues[id]
             has_commits = false
             has_commits_in_head = false
@@ -787,7 +801,7 @@ class Ag
 #                     symbol = "\u26ab"
                 end
             end
-            line = "[#{issue[:id]}]"
+            line = "[#{issue[:id]}]+#{issue[:priority]}"
             unless all_current_issue_ids.include?(id)
                 line = unicode_strike_through(line)
             end
@@ -891,6 +905,7 @@ class Ag
             unless object[:categories].empty?
                 result += "Categories: #{object[:categories].map { |x| load_category(x)[:slug]}.to_a.sort.join(', ')}\n" if object[:categories]
             end
+            result += "Priority: #{object[:priority]}\n"
         else
             raise "Internal error."
         end
@@ -996,6 +1011,7 @@ class Ag
         unless connected_cats.empty?
             template += "\nCategories: #{connected_cats.map { |x| load_category(x)[:slug]}.to_a.sort.join(', ')}"
         end
+        template += "\nPriority: 5"
         issue = parse_object(call_editor(template), id)
         issue[:type] = 'issue'
         
@@ -1027,6 +1043,7 @@ class Ag
                 category[:summary]
             end.sort
             heading += "Categories: #{cats.join(' / ')}\n"
+            heading += "Priority: #{object[:priority]}\n"
         end
         heading += "#{"\u2500" * ol.size}\n"
         heading = heading.split("\n").map { |x| Paint[x, color] }.join("\n")
