@@ -235,7 +235,7 @@ bc. $ ag list
 [br9077]+5 ⇢ Implement XML export (Feature)
 [tz9540]+5 ⇒ Colors are all wrong (Bug)
 
-The arrows indicate that there has already work been done for this issue, that is, there is at least one commit which references the issue. A plus (+) indicates that commits have been made for an issue. The double arrow (⇒) indicates that there are commits reachable from your current branch, and the dashed arrow (⇢) indicates that there are commits in other branches.
+The arrows indicate that there has already work been done for this issue, that is, there is at least one commit which references the issue. The double arrow (⇒) indicates that there are commits reachable from your current branch, and the dashed arrow (⇢) indicates that there are commits in other branches.
 
 h3. Resolving issues
 
