@@ -59,8 +59,7 @@ The small bit in front is the issue ID. You can use it to specify the issue (alt
 bc. $ ag list 
 [tz9540]+5   Colors are all wrong
 
-Yes, the issue is still there! The @+5@ bit reports the priority of the issue, and if there were more issues, they would
-be sorted by that value. Let's look at the issue in detail:
+Yes, the issue is still there! The @+5@ bit reports the priority of the issue, and if there were more issues, they would be sorted by that value. Let's look at the issue in detail:
 
 bc.. $ ag show tz9540
 ═══════════════════════════════
