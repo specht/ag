@@ -1,0 +1,17 @@
+Summary: Don't switch to _ag branch
+Categories: xv7035-bug
+Priority: 5
+
+rnomics@rnomics-desktop:~/vdms/src/scripts (master)$ ag pull
+
+Branch ag set up to track remote branch ag from origin.
+
+Switched to a new branch '_ag'
+
+fatal: Unable to read current working directory: No such file or directory
+
+fatal: Unable to read current working directory: No such file or directory
+
+fatal: Unable to read current working directory: No such file or directory
+
+sh: 0: getcwd() failed: No such file or directory
