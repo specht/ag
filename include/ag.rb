@@ -1277,7 +1277,7 @@ class Ag
             exit(1)
         end
     
-        response = ask("Are you sure you want to remove this issue [y/N]? ")
+        response = ask("Are you sure you want to restore this issue [y/N]? ")
         if response.downcase == 'y'
             commit_object(id, issue, "Restored issue: #{issue[:slug]}", false)
         else
