@@ -8,5 +8,5 @@ Homepage: http://github.com/specht/ag
 
 Package: ag
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, bash-completion
+Depends: ${shlibs:Depends}, ${misc:Depends}, cmake, bash-completion
 Description: Ag - issue tracking intertwined with Git
