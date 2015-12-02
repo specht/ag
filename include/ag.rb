@@ -574,6 +574,8 @@ class Ag
         color_for_object = {}
         walker.each do |commit|
             message = commit.message
+            labels_for_object[commit.oid] ||= Set.new
+            labels_for_object[commit.oid] << message.strip
             if message =~ /^\[[a-z]{2}\d{4}\]/
                 issue_id = message[1, 6]
                 unless color_for_issue_id.include?(issue_id)
@@ -597,6 +599,7 @@ class Ag
                 labels_for_object[commit.oid] << 'FOUND IT'
             end
         end
+        # puts labels_for_object.to_yaml
         skip_commits = Set.new()
         # skip long stretches on single commits
 #         skip_commits = objects.select do |x|
@@ -635,7 +638,7 @@ class Ag
             if parents_for_object[oid].size > 1
                 color = '#f8f8f8'
             end
-            data_str += "    {id: #{id_for_oid[oid]}, label: '#{labels_for_object[oid].to_a.sort.join("\\n")}', color: \"#{color}\"},\n"
+            data_str += "    {id: #{id_for_oid[oid]}, label: \"#{labels_for_object[oid].to_a.sort.join("\\n").gsub("\n", "\\n")}\", color: \"#{color}\"},\n"
             node_data[id_for_oid[oid]] = [oid, commits[oid].message, commits[oid].author]
         end
         data_str += "];\n"

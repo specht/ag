@@ -3,7 +3,7 @@
 tag = `git tag | sort | tail -n 1`.strip
 puts "Publishing Ag #{tag}..."
 
-['lucid', 'precise', 'trusty', 'utopic'].each do |release|
+['precise', 'trusty', 'vivid', 'wily'].each do |release|
     system("rm -rf _build/src")
     system("rm -rf _build/ag_#{tag}*")
     system("mkdir -p _build/src")
