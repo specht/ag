@@ -237,6 +237,12 @@ bc. $ ag list
 
 The arrows indicate that there has already work been done for this issue, that is, there is at least one commit which references the issue. The double arrow (⇒) indicates that there are commits reachable from your current branch, and the dashed arrow (⇢) indicates that there are commits in other branches.
 
+If you don't want to populate your Git repository with all kinds of branches and just want to do a quick commit, you can use the following shortcut:
+
+bc. $ ag commit col[TAB] <arguments>
+
+This will perform a git commit as if you were in the specified topic branch, passing along all following arguments.
+
 h3. Resolving issues
 
 Now that we have fixed the color bug, we can resolve the issue. Because this is all happening in Git, let's remove that bug (we'll still be able to walk back in history to dig out the bug and see when it was filed, when commits have been made, and when it was removed):
@@ -281,6 +287,7 @@ start         Start working on an issue
 locate        Find commits and corresponding branches for an issue
 rm            Remove an issue
 restore       Restore a previously removed issue
+commit        Commit using an issue, regardless of the current branch
 
 Miscellaneous commands:
 pull          Pull upstream changes

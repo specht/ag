@@ -96,8 +96,8 @@ class Ag
                         ac.option(x)
                     end
                 end
-                ['new', 'list', 'show', 'oneline', 'edit',
-                 'connect', 'disconnect', 'start', 'rm', 'restore',
+                ['new', 'list', 'show', 'oneline', 'edit', 'connect',
+                 'disconnect', 'start', 'rm', 'restore', 'commit',
                  'search', 'log', 'locate', 'pull', 'push', 
                  'visualize'].each do |x|
                     ac.option(x)
@@ -1482,6 +1482,7 @@ start         Start working on an issue
 locate        Find commits and corresponding branches for an issue
 rm            Remove an issue
 restore       Restore a previously removed issue
+commit        Commit using an issue, regardless of the current branch
 
 Miscellaneous commands:
 pull          Pull upstream changes
@@ -1567,7 +1568,6 @@ Disconnect an issue from one or more categories.
 
 __start
 Usage: ag start <issue>
-
 Start working on an issue. Ag will create a topic branch for the specified issue.
 The branch name starts with the issue ID followed by a dash, and through this 
 pattern the git prepare-commit-message hook is able to know which issue all 
@@ -1585,6 +1585,10 @@ Remove an issue.
 __restore
 Usage: ag restore <issue>
 Restore a previously removed issue.
+
+__commit
+Usage: ag commit <issue> <commit args>
+Commit using the specified issue, regardless of the current branch.
 
 __pull
 Usage: ag pull
