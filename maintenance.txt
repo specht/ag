@@ -1,2 +1,2 @@
-debuild -S
-dput ppa:micha-specht/ag ../ag_VERSION_source.changes
+sudo apt-get install devscripts cdbs
+./publish.rb
