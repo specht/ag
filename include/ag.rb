@@ -128,7 +128,7 @@ class Ag
                     define_autocomplete_categories(ac)
                     ac.handler { |args| edit_object(args.first) }
                 end
-                
+
                 ac.option('reparent') do |ac|
                     define_autocomplete_categories(ac) do |ac, collected_parts|
                         ac.option('null')
@@ -236,6 +236,11 @@ class Ag
                 ac.handler { |args| restore_issue(args.first) }
             end
                 
+            ac.option('commit') do |ac|
+                define_autocomplete_issues(ac)
+                ac.handler { |args| commit_using_issue(args.first, args[1, args.size - 1]) }
+            end
+
             # Miscellaneous commands
             
             ac.option('search') do |ac|
@@ -1300,6 +1305,13 @@ class Ag
             puts "There are multiple branches connected to the issue, can't decide which one to check out:"
             puts existing_branches.map { |x| x.name }.join("\n")
         end
+    end
+
+    def commit_using_issue(id, args)
+        id = id[0, 6]
+        issue = load_issue(id)
+        command = "AG_COMMIT_USING_ISSUE=#{id} git commit #{args.join(' ')}"
+        system(command)
     end
     
     def search(keywords)

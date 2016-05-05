@@ -2,6 +2,9 @@
 
 template = File::read(ARGV.first)
 current_branch = `git rev-parse --abbrev-ref HEAD`.strip
+if ENV['AG_COMMIT_USING_ISSUE']
+    current_branch = ENV['AG_COMMIT_USING_ISSUE'] + '-'
+end
 
 unless template.include?('Merge branch ') && template.include?(' into ')
     if current_branch =~ /^[a-z]{2}\d{4}\-/
