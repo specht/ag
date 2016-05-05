@@ -1587,7 +1587,7 @@ Usage: ag restore <issue>
 Restore a previously removed issue.
 
 __commit
-Usage: ag commit <issue> <commit args>
+Usage: ag commit <issue> [<args> ...]
 Commit using the specified issue, regardless of the current branch.
 
 __pull
