@@ -71,8 +71,10 @@ class Ag
         srand()
 
         @config = Rugged::Config.global.to_hash
-        
-        @editor = ENV['EDITOR'] || 'nano'
+        @editor = ENV['EDITOR'] || 'nano'  
+        Open3.popen3('git', 'config', '--global', 'core.editor') do | stdin, stdout, stderr, wait_thr |
+            @editor = stdout.gets.chomp || @editor
+        end
 
         unless ARGV.first == 'help'
             begin
