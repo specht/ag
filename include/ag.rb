@@ -1322,12 +1322,15 @@ class Ag
     
     def search(keywords)
         all_current_ids = Set.new(all_ids(false))
+        printed_ids = Set.new()
         all_ids(true).each do |id|
             object = load_object(id)
             found_something = false
             keywords.each do |keyword|
                 if object[:original].downcase.include?(keyword.downcase)
-                    line = "[#{object[:id]}]"
+                    next unless printed_ids.include?(id)
+                    printed_ids << id
+                    line = "[#{id}]"
                     unless all_current_ids.include?(id)
                         line = unicode_strike_through(line)
                     end
