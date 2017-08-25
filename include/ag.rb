@@ -1328,7 +1328,7 @@ class Ag
             found_something = false
             keywords.each do |keyword|
                 if object[:original].downcase.include?(keyword.downcase)
-                    next unless printed_ids.include?(id)
+                    next if printed_ids.include?(id)
                     printed_ids << id
                     line = "[#{id}]"
                     unless all_current_ids.include?(id)
